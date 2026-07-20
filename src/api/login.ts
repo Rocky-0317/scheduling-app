@@ -15,6 +15,7 @@ export interface ILoginForm {
   type: 'username' | 'register' | 'sms'
   username?: string
   password?: string
+  uuid?: string
   nickname?: string
   captchaVerification?: string
   mobile?: string
@@ -35,6 +36,8 @@ export interface AuthSocialLoginReq {
 export interface AuthLoginReqVO {
   password?: string
   username?: string
+  code?: string
+  uuid?: string
   captchaVerification?: string
   // 绑定社交登录时，需要传递如下参数
   socialType?: number
@@ -75,6 +78,10 @@ export interface AuthResetPasswordReqVO {
 }
 
 /** 获取验证码 */
+export function getCodeImg() {
+  return http.get<any>('/captchaImage', undefined, { isToken: false } as any, { original: true })
+}
+
 export function getCode(data: any) {
   return http.post<ICaptcha>('/system/captcha/get', data, null, null, { original: true })
 }
@@ -85,8 +92,18 @@ export function checkCaptcha(data: any) {
 }
 
 /** 使用账号密码登录 */
-export function login(data: AuthLoginReqVO) {
-  return http.post<IAuthLoginRes>('/system/auth/login', data)
+export async function login(data: AuthLoginReqVO) {
+  const payload = {
+    username: data.username,
+    password: data.password,
+    code: data.code || '',
+    uuid: data.uuid || '',
+  }
+  const res = await http.post<any>('/login', payload, undefined, { isToken: false, repeatSubmit: false } as any, { original: true })
+  return {
+    token: res.token,
+    expiresIn: 15 * 24 * 60 * 60,
+  } as IAuthLoginRes
 }
 
 /** 注册用户 */
@@ -126,12 +143,12 @@ export function refreshToken(refreshToken: string) {
 
 /** 获取权限信息 */
 export function getAuthPermissionInfo() {
-  return http.get<AuthPermissionInfo>('/system/auth/get-permission-info')
+  return http.get<AuthPermissionInfo>('/getInfo', undefined, undefined, { original: true })
 }
 
 /** 退出登录 */
 export function logout() {
-  return http.post<void>('/system/auth/logout')
+  return http.post<void>('/logout')
 }
 
 /** 获取社交授权地址 */

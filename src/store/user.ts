@@ -30,14 +30,21 @@ export const useUserStore = defineStore(
 
     /** 设置用户信息 */
     const setUserInfo = (val: AuthPermissionInfo) => {
+      const rawUser = (val.user || {}) as any
+      const normalizedUser = {
+        ...rawUser,
+        userId: rawUser.userId ?? rawUser.id ?? -1,
+        username: rawUser.username ?? rawUser.userName ?? '',
+        nickname: rawUser.nickname ?? rawUser.nickName ?? rawUser.userName ?? '',
+      }
       // console.log('设置用户信息', val)
       // 若头像为空 则使用默认头像
-      if (!val.user.avatar) {
-        val.user.avatar = userInfoState.avatar
+      if (!normalizedUser.avatar) {
+        normalizedUser.avatar = userInfoState.avatar
       }
-      userInfo.value = val.user
-      roles.value = val.roles
-      permissions.value = val.permissions
+      userInfo.value = normalizedUser
+      roles.value = val.roles || []
+      permissions.value = val.permissions || []
     }
 
     const setUserAvatar = (avatar: string) => {
@@ -81,7 +88,6 @@ export const useUserStore = defineStore(
     const fetchUserInfo = async () => {
       const res = await getAuthPermissionInfo()
       // 兼容：后端返回的用户 id 字段为 id
-      res.user.userId = res.user.id
       setUserInfo(res)
       return res
     }

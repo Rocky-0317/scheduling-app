@@ -2,7 +2,6 @@ import type { DictData } from '@/api/system/dict/data'
 import { defineStore } from 'pinia'
 
 import { computed, ref } from 'vue'
-import { getSimpleDictDataList } from '@/api/system/dict/data'
 import { sleep } from '@/utils/promise'
 
 /** 字典项 */
@@ -39,7 +38,7 @@ export const useDictStore = defineStore(
       }
 
       loadingPromise = (async () => {
-        const dicts = await getSimpleDictDataList()
+        const dicts: DictData[] = []
         const dictCacheData: DictCache = {}
         dicts.forEach((dict: DictData) => {
           if (!dictCacheData[dict.dictType]) {

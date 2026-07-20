@@ -1,94 +1,48 @@
 <template>
-  <view class="yd-page-container">
-    <!-- 顶部导航栏 -->
-    <wd-navbar
-      title="通讯录"
-      placeholder safe-area-inset-top fixed
-    />
+  <view class="yd-page-container category-page">
+    <wd-navbar title="人员管理" placeholder safe-area-inset-top fixed />
 
-    <!-- 面包屑导航 -->
-    <Breadcrumb ref="breadcrumbRef" v-model="currentDeptId" />
-
-    <!-- 通讯录列表 -->
-    <view class="p-24rpx">
-      <!-- 部门列表 -->
-      <view
-        v-for="item in currentDeptList"
-        :key="`dept-${item.id}`"
-        class="mb-24rpx overflow-hidden rounded-12rpx bg-white shadow-sm"
-        @click="handleEnterDept(item)"
-      >
-        <view class="flex items-center p-24rpx">
-          <view class="mr-16rpx h-80rpx w-80rpx flex items-center justify-center rounded-8rpx bg-[#1890ff]">
-            <wd-icon name="folder" size="32px" color="#fff" />
+    <scroll-view scroll-y class="category-scroll">
+      <view class="category-content">
+        <view class="category-header">
+          <view class="header-icon">
+            <wd-icon name="user-group" size="44rpx" color="#0f766e" />
           </view>
-          <view class="flex-1">
-            <view class="text-28rpx text-[#333] font-medium">
-              {{ item.name }}
+          <view class="header-copy">
+            <view class="header-title">
+              人员管理
             </view>
-            <view v-if="item.children && item.children.length > 0" class="mt-8rpx text-24rpx text-[#999]">
-              {{ item.children.length }} 个子部门
-            </view>
-          </view>
-          <wd-icon name="arrow-right" size="16px" color="#999" />
-        </view>
-      </view>
-
-      <!-- 用户列表 -->
-      <view v-if="currentDeptList.length > 0 && currentUserList.length > 0" class="my-24rpx flex items-center">
-        <view class="h-1rpx flex-1 bg-[#ddd]" />
-        <text class="mx-16rpx text-24rpx text-[#999]">部门成员</text>
-        <view class="h-1rpx flex-1 bg-[#ddd]" />
-      </view>
-      <view
-        v-for="item in currentUserList"
-        :key="`user-${item.id}`"
-        class="mb-24rpx overflow-hidden rounded-12rpx bg-white shadow-sm"
-        @click="handleUserClick(item)"
-      >
-        <view class="flex items-center p-24rpx">
-          <view v-if="item.avatar" class="mr-16rpx shrink-0">
-            <wd-img :src="item.avatar" width="80rpx" height="80rpx" mode="aspectFill" round />
-          </view>
-          <view
-            v-else
-            class="mr-16rpx h-80rpx w-80rpx flex items-center justify-center rounded-full bg-[#1890ff] text-32rpx text-white"
-          >
-            {{ item.nickname?.charAt(0) || item.username?.charAt(0) }}
-          </view>
-          <view class="flex-1">
-            <view class="text-28rpx text-[#333] font-medium">
-              {{ item.nickname }}
+            <view class="header-subtitle">
+              维护外呼人员、角色、业务类型与网格范围
             </view>
           </view>
         </view>
-      </view>
 
-      <!-- 空状态 -->
-      <view v-if="!loading && currentDeptList.length === 0 && currentUserList.length === 0" class="py-100rpx text-center">
-        <wd-empty icon="content" tip="暂无数据" />
+        <view class="menu-list">
+          <view v-for="menu in menus" :key="menu.key" class="menu-row" @click="navigateToMenu(menu)">
+            <view class="row-icon" :style="getIconStyle(menu)">
+              <wd-icon :name="menu.icon" size="38rpx" :color="menu.iconColor || '#0f766e'" />
+            </view>
+            <view class="row-copy">
+              <view class="row-title">
+                {{ menu.name }}
+              </view>
+              <view class="row-desc">
+                账号、角色、电话、业务范围统一维护
+              </view>
+            </view>
+            <wd-icon name="arrow-right" size="28rpx" color="#94a3b8" />
+          </view>
+        </view>
       </view>
-    </view>
-
-    <!-- 联系方式菜单 -->
-    <wd-action-sheet
-      v-model="contactActionVisible"
-      :actions="contactActions"
-      :title="contactUser?.nickname"
-      @select="handleContactAction"
-    />
+    </scroll-view>
   </view>
 </template>
 
 <script lang="ts" setup>
-import type { Dept } from '@/api/system/dept'
-import type { User } from '@/api/system/user'
-import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { computed, onMounted, ref } from 'vue'
-import { getSimpleDeptList } from '@/api/system/dept'
-import { getSimpleUserList, getUser } from '@/api/system/user'
-import { findChildren, handleTree } from '@/utils/tree'
-import Breadcrumb from './components/breadcrumb.vue'
+import type { MenuItem } from '@/pages/index'
+import { computed } from 'vue'
+import { getMenuGroups, useMenuNavigate } from '@/pages/index'
 
 definePage({
   style: {
@@ -97,84 +51,101 @@ definePage({
   },
 })
 
-const loading = ref(false) // 列表加载状态
-const deptList = ref<Dept[]>([]) // 完整部门列表（树形结构）
-const userList = ref<User[]>([]) // 用户列表
-const toast = useToast()
+const { navigateToMenu } = useMenuNavigate()
+const menus = computed(() => getMenuGroups().find(group => group.key === 'personnel')?.menus || [])
 
-const currentDeptId = ref(0) // 当前层级的部门编号
-const breadcrumbRef = ref<InstanceType<typeof Breadcrumb>>()
-const contactActionVisible = ref(false) // 联系方式菜单显示状态
-const contactUser = ref<User>() // 当前查看的用户
-const contactActions = ref<Array<{ name: string, value: 'mobile' | 'email' }>>([]) // 联系方式菜单项
-
-/** 当前层级的部门列表 */
-const currentDeptList = computed(() => {
-  if (currentDeptId.value === 0) {
-    return deptList.value.filter(item => item.parentId === 0)
-  }
-  return findChildren(deptList.value, currentDeptId.value)
-})
-
-/** 当前层级的用户列表 */
-const currentUserList = computed(() => {
-  if (currentDeptId.value === 0) {
-    // 根层级不显示用户，只显示部门
-    return []
-  }
-  return userList.value.filter(item => item.deptId === currentDeptId.value)
-})
-
-/** 进入部门层级 */
-function handleEnterDept(item: Dept) {
-  breadcrumbRef.value?.enter({ id: item.id!, name: item.name })
+function getIconStyle(menu: MenuItem) {
+  return { backgroundColor: menu.iconColor ? `${menu.iconColor}14` : '#eef8f6' }
 }
-
-/** 点击用户：弹出联系方式 */
-async function handleUserClick(item: User) {
-  const userInfo = await getUser(item.id!)
-  const actions: Array<{ name: string, value: 'mobile' | 'email' }> = []
-  if (userInfo.mobile) {
-    actions.push({ name: `手机：${userInfo.mobile}`, value: 'mobile' })
-  }
-  if (userInfo.email) {
-    actions.push({ name: `邮箱：${userInfo.email}`, value: 'email' })
-  }
-  if (actions.length === 0) {
-    toast.show('暂无联系方式')
-    return
-  }
-  contactUser.value = userInfo
-  contactActions.value = actions
-  contactActionVisible.value = true
-}
-
-/** 选择联系方式 */
-function handleContactAction({ item }: { item: { value: 'mobile' | 'email' } }) {
-  if (item.value === 'mobile' && contactUser.value?.mobile) {
-    uni.makePhoneCall({ phoneNumber: contactUser.value.mobile })
-  } else if (item.value === 'email' && contactUser.value?.email) {
-    uni.setClipboardData({
-      data: contactUser.value.email,
-      success: () => {
-        uni.hideToast()
-        toast.success('邮箱已复制')
-      },
-    })
-  }
-}
-
-/** 初始化 */
-onMounted(async () => {
-  loading.value = true
-  try {
-    // 获取部门列表
-    const deptData = await getSimpleDeptList()
-    deptList.value = handleTree(deptData)
-    // 获取用户列表
-    userList.value = await getSimpleUserList()
-  } finally {
-    loading.value = false
-  }
-})
 </script>
+
+<style scoped lang="scss">
+.category-page {
+  min-height: 100vh;
+  background: #f4f7f6;
+}
+
+.category-scroll {
+  min-height: 0;
+  flex: 1;
+}
+
+.category-content {
+  padding: 24rpx;
+}
+
+.category-header,
+.menu-row {
+  border: 1rpx solid #e2ebe8;
+  border-radius: 8rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 26rpx;
+}
+
+.header-icon,
+.row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 8rpx;
+  background: #eef8f6;
+}
+
+.header-icon {
+  width: 82rpx;
+  height: 82rpx;
+}
+
+.header-copy,
+.row-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.header-title {
+  color: #0f172a;
+  font-size: 36rpx;
+  font-weight: 800;
+}
+
+.header-subtitle,
+.row-desc {
+  margin-top: 8rpx;
+  color: #64748b;
+  font-size: 24rpx;
+}
+
+.menu-list {
+  display: grid;
+  gap: 14rpx;
+  margin-top: 20rpx;
+  padding-bottom: 48rpx;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  min-height: 112rpx;
+  padding: 20rpx;
+}
+
+.row-icon {
+  width: 72rpx;
+  height: 72rpx;
+}
+
+.row-title {
+  color: #111827;
+  font-size: 30rpx;
+  font-weight: 750;
+}
+</style>

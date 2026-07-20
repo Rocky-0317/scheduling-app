@@ -255,7 +255,10 @@ export const useTokenStore = defineStore(
         return isSingleTokenRes(tokenInfo.value) ? tokenInfo.value.token : ''
       }
       else {
-        return isDoubleTokenRes(tokenInfo.value) ? tokenInfo.value.accessToken : ''
+        if (isDoubleTokenRes(tokenInfo.value)) {
+          return tokenInfo.value.accessToken
+        }
+        return isSingleTokenRes(tokenInfo.value) ? tokenInfo.value.token : ''
       }
     })
 
@@ -267,7 +270,8 @@ export const useTokenStore = defineStore(
         return false
       }
       if (isDoubleTokenMode) {
-        return isDoubleTokenRes(tokenInfo.value) && !!tokenInfo.value.accessToken
+        return (isDoubleTokenRes(tokenInfo.value) && !!tokenInfo.value.accessToken)
+          || (isSingleTokenRes(tokenInfo.value) && !!tokenInfo.value.token)
       }
       else {
         return isSingleTokenRes(tokenInfo.value) && !!tokenInfo.value.token

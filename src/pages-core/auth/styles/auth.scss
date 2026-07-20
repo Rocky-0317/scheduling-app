@@ -2,29 +2,38 @@
 
 // 页面容器
 .auth-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: linear-gradient(180deg, #e8f4ff 0%, #fff 50%);
+  overflow: hidden;
+  background: linear-gradient(180deg, #eef8f6 0%, #f7faf9 45%, #ffffff 100%);
   box-sizing: border-box;
 }
 
 // 表单容器
 .form-container {
+  position: relative;
+  z-index: 1;
   flex: 1;
-  border-radius: 24rpx 24rpx 0 0;
+  margin: 0 24rpx 24rpx;
+  padding: 30rpx 30rpx 34rpx;
+  border: 1rpx solid #dfe9e7;
+  border-radius: 8rpx;
   background: #fff;
-  padding: 40rpx;
+  box-shadow: 0 16rpx 46rpx rgba(15, 23, 42, 0.08);
 }
 
 // 输入项
 .input-item {
   display: flex;
   align-items: center;
-  padding: 20rpx 24rpx;
-  background: #f5f7fa;
-  border-radius: 12rpx;
-  margin-bottom: 24rpx;
+  min-height: 96rpx;
+  margin-bottom: 20rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid #dfe9e7;
+  border-radius: 8rpx;
+  background: #f8fbfa;
 
   :deep(.wd-input) {
     flex: 1;
@@ -81,4 +90,12 @@
   gap: 12rpx;
   color: #666;
   font-size: 24rpx;
+}
+
+:deep(.wd-button.is-block) {
+  height: 92rpx;
+  border-radius: 8rpx;
+  font-size: 30rpx;
+  font-weight: 700;
+  box-shadow: 0 12rpx 26rpx rgba(15, 118, 110, 0.22);
 }

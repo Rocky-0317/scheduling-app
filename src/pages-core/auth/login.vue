@@ -5,7 +5,22 @@
 
     <!-- 表单区域 -->
     <view class="form-container">
+      <view class="form-head">
+        <view>
+          <view class="form-title">
+            账号登录
+          </view>
+          <view class="form-subtitle">
+            使用调度系统账号进入工作台
+          </view>
+        </view>
+        <view class="env-chip">
+          生产接口
+        </view>
+      </view>
+
       <TenantPicker
+        v-if="!ruoyiAuthMode"
         ref="tenantPickerRef"
         :disabled="Boolean(socialBindingContext) || authLoading"
         :preferred-tenant-id="socialBindingContext?.tenantId"
@@ -14,16 +29,16 @@
         三方授权成功，请使用账号密码登录完成绑定
       </view>
       <view class="input-item">
-        <wd-icon name="user" size="20px" color="#1890ff" />
+        <wd-icon name="user" size="20px" color="#0f766e" />
         <wd-input
           v-model="formData.username"
-          placeholder="请输入用户名"
+          placeholder="请输入账号"
           clearable
           clear-trigger="focus"
         />
       </view>
       <view class="input-item">
-        <wd-icon name="lock" size="20px" color="#1890ff" />
+        <wd-icon name="lock" size="20px" color="#0f766e" />
         <wd-input
           v-model="formData.password"
           placeholder="请输入密码"
@@ -44,33 +59,19 @@
       </view>
 
       <!-- 登录按钮 -->
-      <view class="mb-2 mt-2 flex justify-between">
-        <text v-if="!socialBindingContext && !authLoading" class="text-28rpx text-[#1890ff]" @click="goToSmsLogin">
-          验证码登录
-        </text>
-        <text v-if="!authLoading" class="text-28rpx text-[#1890ff]" @click="goToForgetPassword">
-          忘记密码？
-        </text>
-      </view>
       <wd-button block :disabled="authLoading" :loading="loading" type="primary" @click="handleLogin">
-        登录
+        登录工作台
       </wd-button>
 
-      <!-- 第三方登录 -->
-      <SocialLoginPanel
-        v-model="socialBindingContext"
-        v-model:loading="socialLoginLoading"
-        :disabled="authLoading"
-        :redirect-url="redirectUrl"
-        :social-bind="Boolean(pageProps.socialBind)"
-        :validate-tenant="validateTenant"
-      />
-      <!-- 创建账号 -->
-      <view v-if="!socialBindingContext && !authLoading" class="mt-40rpx flex items-center justify-center">
-        <text class="text-28rpx text-[#666]">还没有账号？</text>
-        <text class="text-28rpx text-[#1890ff]" @click="goToRegister">
-          创建账号
-        </text>
+      <view class="login-meta">
+        <view>
+          <text class="meta-label">服务地址</text>
+          <text class="meta-value">8.163.84.171:8000/prod-api</text>
+        </view>
+        <view>
+          <text class="meta-label">认证方式</text>
+          <text class="meta-value">账号密码登录</text>
+        </view>
       </view>
     </view>
   </view>
@@ -80,15 +81,9 @@
 import type { SocialLoginBindingContext } from '@/utils/social-login'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { computed, reactive, ref } from 'vue'
-import {
-  CODE_LOGIN_PAGE,
-  FORGET_PASSWORD_PAGE,
-  REGISTER_PAGE,
-} from '@/router/config'
 import { useTokenStore } from '@/store/token'
 import { ensureDecodeURIComponent, redirectAfterLogin } from '@/utils'
 import Header from './components/header.vue'
-import SocialLoginPanel from './components/social-login-panel.vue'
 import TenantPicker from './components/tenant-picker.vue'
 import Verify from './components/verifition/verify.vue'
 
@@ -115,16 +110,19 @@ const loading = ref(false) // 表单提交状态
 const redirectUrl = ref(pageProps.redirect ? ensureDecodeURIComponent(pageProps.redirect) : undefined) // 重定向地址
 const tenantPickerRef = ref<InstanceType<typeof TenantPicker>>() // 租户选择器引用
 const captchaEnabled = import.meta.env.VITE_APP_CAPTCHA_ENABLE === 'true' // 验证码开关
+const ruoyiAuthMode = true
 const verifyRef = ref()
 const captchaType = ref('blockPuzzle') // 滑块验证码 blockPuzzle|clickWord
 
 const formData = reactive({
   username: import.meta.env.VITE_APP_DEFAULT_LOGIN_USERNAME || '',
   password: import.meta.env.VITE_APP_DEFAULT_LOGIN_PASSWORD || '',
+  code: '',
+  uuid: '',
   captchaVerification: '', // 验证码校验值
 }) // 表单数据
 const socialBindingContext = ref<SocialLoginBindingContext>() // 待绑定的三方授权上下文
-const socialLoginLoading = ref(false) // 三方登录进行状态
+const socialLoginLoading = ref(false) // 保留状态，兼容三方绑定回跳参数
 const authLoading = computed(() => loading.value || socialLoginLoading.value) // 任一登录流程进行状态
 const socialAuth = computed(() => { // 待绑定的三方授权参数
   const context = socialBindingContext.value
@@ -187,27 +185,78 @@ async function verifySuccess(params: any) {
   }
 }
 
-/** 跳转到注册页面 */
-function goToRegister() {
-  uni.navigateTo({ url: REGISTER_PAGE })
-}
-
-/** 跳转到验证码登录 */
-function goToSmsLogin() {
-  uni.navigateTo({ url: CODE_LOGIN_PAGE })
-}
-
-/** 跳转到忘记密码 */
-function goToForgetPassword() {
-  uni.navigateTo({ url: FORGET_PASSWORD_PAGE })
-}
-
 /** 校验当前租户 */
 function validateTenant() {
+  if (ruoyiAuthMode) {
+    return true
+  }
   return Boolean(tenantPickerRef.value?.validate())
 }
 </script>
 
 <style lang="scss" scoped>
 @import './styles/auth.scss';
+
+.form-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-bottom: 28rpx;
+}
+
+.form-title {
+  color: #0f172a;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+
+.form-subtitle {
+  margin-top: 8rpx;
+  color: #64748b;
+  font-size: 24rpx;
+}
+
+.env-chip {
+  flex-shrink: 0;
+  padding: 8rpx 14rpx;
+  border: 1rpx solid #bbddd6;
+  border-radius: 8rpx;
+  color: #0f766e;
+  background: #effaf7;
+  font-size: 22rpx;
+  font-weight: 650;
+}
+
+.login-meta {
+  display: grid;
+  gap: 14rpx;
+  margin-top: 28rpx;
+  padding: 22rpx;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 8rpx;
+  background: #f8fafc;
+
+  view {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20rpx;
+  }
+}
+
+.meta-label {
+  flex-shrink: 0;
+  color: #64748b;
+  font-size: 23rpx;
+}
+
+.meta-value {
+  min-width: 0;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 23rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 </style>

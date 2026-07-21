@@ -95,12 +95,12 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'isSuccess', label: '办理结果', type: 'radio', options: successOptions },
     ],
     formFields: [
-      { key: 'businessType', label: '业务类型' },
+      { key: 'businessType', label: '业务类型', type: 'picker', source: 'businessType', required: true },
       { key: 'registerDate', label: '登记日期', type: 'date' },
       { key: 'registrant', label: '登记人', required: true },
       { key: 'customerNumber', label: '客户号码', required: true },
       { key: 'packageName', label: '套餐' },
-      { key: 'grid', label: '网格', required: true },
+      { key: 'grid', label: '网格', type: 'picker', source: 'grid', required: true },
       { key: 'deliveryAddress', label: '配送地址', type: 'textarea' },
       { key: 'receiver', label: '接单人', hiddenOnCreate: true, readonly: true },
       { key: 'orderTime', label: '接单时间', hiddenOnCreate: true, readonly: true },
@@ -364,4 +364,37 @@ export function getStatusType(key: string | undefined, value: any, options?: Arr
     return strValue === '0' ? 'success' : 'danger'
   }
   return 'default'
+}
+
+/**
+ * 根据source类型加载下拉选项
+ * @param source role / businessType / grid
+ */
+export async function loadSourceOptions(source: 'role' | 'businessType' | 'grid') {
+  switch (source) {
+    case 'businessType': {
+      const res = await businessApi.listBusinessTypeOptions()
+      // 字典转统一 {label,value} 格式
+      return res.map(item => ({
+        label: item.dictLabel || item.label,
+        value: item.dictValue || item.value,
+      }))
+    }
+    case 'grid': {
+      const res = await businessApi.listActiveGridOptions()
+      return res.rows.map(item => ({
+        label: item.gridName,
+        value: item.id,
+      }))
+    }
+    case 'role': {
+      const res = await businessApi.listRoleOptions()
+      return res.rows.map(item => ({
+        label: item.roleName,
+        value: item.roleId,
+      }))
+    }
+    default:
+      return []
+  }
 }

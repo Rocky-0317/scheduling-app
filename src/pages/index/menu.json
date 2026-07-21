@@ -26,7 +26,7 @@
             {
               "key": "assignmentTree",
               "name": "分发记录",
-              "icon": "share",
+              "icon": "arrow-right",
               "iconColor": "#4f46e5",
               "url": "/pages-business/manager/index?module=assignmentTree",
               "permission": "business:outboundRecord:query"
@@ -42,7 +42,7 @@
             {
               "key": "timeoutReminder",
               "name": "超时提醒",
-              "icon": "warning",
+              "icon": "exclamation-circle",
               "iconColor": "#d97706",
               "url": "/pages-business/manager/index?module=timeoutReminder",
               "permission": "business:outboundRecord:query"
@@ -63,7 +63,7 @@
               "key": "outboundPersonnel",
               "name": "人员管理",
               "icon": "user-group",
-              "iconColor": "#0f766e",
+              "iconColor": "#2f7dff",
               "url": "/pages-business/manager/index?module=outboundPersonnel",
               "permission": "business:outboundPersonnel:list"
             }
@@ -82,7 +82,7 @@
             {
               "key": "bizPackage",
               "name": "套餐管理",
-              "icon": "goods",
+              "icon": "home",
               "iconColor": "#dc2626",
               "url": "/pages-business/manager/index?module=bizPackage",
               "permission": "biz:package:query"

@@ -2,11 +2,11 @@
   <view class="header">
     <view class="brand-row">
       <view class="logo-shell">
-        <wd-img src="/static/logo.svg" width="96rpx" height="96rpx" mode="aspectFit" />
+        <wd-img src="/static/logo.svg" width="84rpx" height="84rpx" mode="aspectFit" />
       </view>
       <view class="brand-copy">
         <view class="brand-title">
-          {{ title }}
+          {{ title || '配送调度系统' }}
         </view>
         <view class="brand-subtitle">
           外呼分发、网格协同、超时闭环
@@ -26,31 +26,33 @@
 </template>
 
 <script lang="ts" setup>
-const title = import.meta.env.VITE_APP_TITLE // 应用标题
+const title = import.meta.env.VITE_APP_TITLE
 </script>
 
 <style lang="scss" scoped>
 .header {
-  padding: 92rpx 32rpx 28rpx;
+  position: relative;
+  z-index: 1;
+  padding: 92rpx 32rpx 24rpx;
 }
 
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 22rpx;
+  gap: 20rpx;
 }
 
 .logo-shell {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 112rpx;
-  height: 112rpx;
+  width: 104rpx;
+  height: 104rpx;
   flex-shrink: 0;
-  border: 1rpx solid rgba(15, 118, 110, 0.12);
-  border-radius: 24rpx;
-  background: #fff;
-  box-shadow: 0 14rpx 34rpx rgba(15, 118, 110, 0.16);
+  border: 1rpx solid rgba(255, 255, 255, 0.82);
+  border-radius: 30rpx;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 16rpx 34rpx rgba(47, 125, 255, 0.12);
 }
 
 .brand-copy {
@@ -59,38 +61,42 @@ const title = import.meta.env.VITE_APP_TITLE // 应用标题
 }
 
 .brand-title {
-  color: #0f172a;
-  font-size: 44rpx;
-  font-weight: 800;
+  overflow: hidden;
+  color: #0b2b5c;
+  font-size: 42rpx;
+  font-weight: 900;
   line-height: 1.16;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand-subtitle {
   margin-top: 12rpx;
-  color: #475569;
-  font-size: 25rpx;
+  color: #64748b;
+  font-size: 24rpx;
 }
 
 .process-strip {
   display: flex;
   align-items: center;
   gap: 12rpx;
-  margin-top: 30rpx;
+  margin-top: 28rpx;
   padding: 18rpx 20rpx;
-  border: 1rpx solid #d9ebe7;
-  border-radius: 8rpx;
-  background: rgba(255, 255, 255, 0.74);
+  border: 1rpx solid rgba(255, 255, 255, 0.78);
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 12rpx 28rpx rgba(47, 125, 255, 0.08);
 
   text {
-    color: #0f766e;
+    color: #0b2b5c;
     font-size: 23rpx;
-    font-weight: 650;
+    font-weight: 750;
   }
 
   view {
     height: 2rpx;
     flex: 1;
-    background: #99d5ca;
+    background: #c8d9f3;
   }
 }
 </style>

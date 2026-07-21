@@ -75,6 +75,7 @@
         type="primary"
         @click="handleRegister"
       >
+        <wd-icon name="check-circle" size="28rpx" color="#fff" custom-class="button-icon" />
         注册
       </wd-button>
 

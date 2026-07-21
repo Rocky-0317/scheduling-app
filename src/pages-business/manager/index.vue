@@ -4,16 +4,18 @@
 
     <view class="list-tools">
       <view class="filter-entry" @click="openSearch">
-        <wd-icon name="filter" size="34rpx" color="#0f766e" />
+        <wd-icon name="filter" size="34rpx" color="#2f7dff" />
         <text class="filter-title">{{ searchPlaceholder }}</text>
         <view v-if="activeSearchCount" class="filter-count">
           {{ activeSearchCount }}
         </view>
       </view>
       <wd-button v-if="activeSearchCount" size="small" plain @click="resetSearch">
+        <wd-icon name="delete" size="24rpx" color="#475569" custom-class="button-icon" />
         清空
       </wd-button>
       <wd-button v-if="isTimeoutModule" size="small" type="primary" plain @click="openTimeoutConfig">
+        <wd-icon name="settings" size="24rpx" color="#2f7dff" custom-class="button-icon" />
         设置
       </wd-button>
     </view>
@@ -61,18 +63,23 @@
 
           <view class="record-actions">
             <wd-button v-if="canOpenDetail(item)" size="small" plain @click="openDetail(item)">
+              <wd-icon name="search-line" size="24rpx" color="#475569" custom-class="button-icon" />
               详情
             </wd-button>
             <wd-button v-if="canEdit" size="small" type="success" plain @click="openForm(item)">
+              <wd-icon name="edit" size="24rpx" color="#16a34a" custom-class="button-icon" />
               编辑
             </wd-button>
             <wd-button v-if="config.claim && item.assignmentStatus === '1'" size="small" type="primary" plain @click="claimRecord(item)">
+              <wd-icon name="check-circle" size="24rpx" color="#2f7dff" custom-class="button-icon" />
               领取
             </wd-button>
             <wd-button v-if="config.uploadImages && getItemId(item)" size="small" type="info" plain @click="uploadImages(item)">
+              <wd-icon name="arrow-right" size="24rpx" color="#0891b2" custom-class="button-icon" />
               上传图片
             </wd-button>
             <wd-button v-if="config.remove" size="small" plain @click="removeItem(item)">
+              <wd-icon name="delete" size="24rpx" color="#dc2626" custom-class="button-icon" />
               删除
             </wd-button>
           </view>
@@ -100,9 +107,11 @@
         </view>
         <view class="config-actions">
           <wd-button class="flex-1" plain @click="timeoutConfigVisible = false">
+            <wd-icon name="close" size="26rpx" color="#475569" custom-class="button-icon" />
             取消
           </wd-button>
           <wd-button class="flex-1" type="primary" :loading="timeoutSaving" @click="saveTimeoutConfig">
+            <wd-icon name="check-circle" size="26rpx" color="#fff" custom-class="button-icon" />
             保存
           </wd-button>
         </view>
@@ -138,9 +147,11 @@
         </view>
         <view class="search-actions">
           <wd-button class="flex-1" variant="plain" @click="resetSearch">
+            <wd-icon name="close" size="26rpx" color="#475569" custom-class="button-icon" />
             重置
           </wd-button>
           <wd-button class="flex-1" type="primary" @click="submitSearch">
+            <wd-icon name="search-line" size="26rpx" color="#fff" custom-class="button-icon" />
             搜索
           </wd-button>
         </view>
@@ -358,7 +369,7 @@ function previewImage(urls: string[], current: string) {
 
 <style scoped lang="scss">
 .business-list {
-  background: #f5f7fb;
+  background: #f3f6fb;
 }
 
 .list-tools {
@@ -377,9 +388,9 @@ function previewImage(urls: string[], current: string) {
   flex: 1;
   height: 72rpx;
   padding: 0 20rpx;
-  border: 1rpx solid #dfe9e7;
-  border-radius: 8rpx;
-  background: #f8fbfa;
+  border: 1rpx solid #dbe8ff;
+  border-radius: 18rpx;
+  background: #f8fbff;
 }
 
 .filter-title {
@@ -401,7 +412,7 @@ function previewImage(urls: string[], current: string) {
   padding: 0 8rpx;
   border-radius: 999rpx;
   color: #fff;
-  background: #0f766e;
+  background: #2f7dff;
   font-size: 22rpx;
 }
 
@@ -409,9 +420,9 @@ function previewImage(urls: string[], current: string) {
   margin-bottom: 20rpx;
   padding: 24rpx;
   border: 1rpx solid #eef2f7;
-  border-radius: 8rpx;
+  border-radius: 20rpx;
   background: #fff;
-  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.07);
 }
 
 .record-head,
@@ -426,7 +437,7 @@ function previewImage(urls: string[], current: string) {
   min-width: 0;
   flex: 1;
   overflow: hidden;
-  color: #111827;
+  color: #0b2b5c;
   font-size: 32rpx;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -486,7 +497,7 @@ function previewImage(urls: string[], current: string) {
 
 .config-title {
   margin-bottom: 24rpx;
-  color: #111827;
+  color: #0b2b5c;
   font-size: 32rpx;
   font-weight: 700;
 }
@@ -497,7 +508,7 @@ function previewImage(urls: string[], current: string) {
   justify-content: space-between;
   gap: 24rpx;
   min-height: 84rpx;
-  color: #111827;
+  color: #0b2b5c;
   font-size: 28rpx;
 }
 
@@ -538,7 +549,7 @@ function previewImage(urls: string[], current: string) {
 }
 
 .search-title {
-  color: #111827;
+  color: #0b2b5c;
   font-size: 32rpx;
   font-weight: 800;
 }
@@ -564,5 +575,10 @@ function previewImage(urls: string[], current: string) {
   display: flex;
   gap: 20rpx;
   margin-top: 30rpx;
+}
+
+:deep(.button-icon) {
+  margin-right: 6rpx;
+  vertical-align: -3rpx;
 }
 </style>

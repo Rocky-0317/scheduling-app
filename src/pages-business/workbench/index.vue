@@ -18,7 +18,7 @@
               </view>
             </view>
             <view class="overview-status">
-              <wd-icon name="check-circle" size="28rpx" color="#0f766e" />
+              <wd-icon name="check-circle" size="28rpx" color="#2f7dff" />
               <text>{{ summary.runStatus || '正常' }}</text>
             </view>
           </view>
@@ -131,27 +131,27 @@ const today = new Date().toISOString().slice(0, 10)
 const summary = ref<OutboundWorkbenchSummary>({})
 
 const metrics = ref([
-  { key: 'unassigned', title: '待分发记录', value: 0, description: '等待调度处理', icon: 'clock-circle', color: '#2563eb', tint: '#eff6ff' },
+  { key: 'unassigned', title: '待分发记录', value: 0, description: '等待调度处理', icon: 'clock-circle', color: '#2f7dff', tint: '#eff6ff' },
   { key: 'pendingClaim', title: '待领取任务', value: 0, description: '业务人员待跟进', icon: 'user', color: '#d97706', tint: '#fff7ed' },
   { key: 'claimed', title: '已领取任务', value: 0, description: '正在跟进处理', icon: 'check-circle', color: '#16a34a', tint: '#ecfdf5' },
   { key: 'successHandled', title: '成功办理量', value: 0, description: '成功办理', icon: 'dashboard', color: '#0891b2', tint: '#ecfeff' },
 ])
 
 const statusItems = ref([
-  { key: 'unassigned', label: '未分发', value: 0, color: '#2563eb' },
+  { key: 'unassigned', label: '未分发', value: 0, color: '#2f7dff' },
   { key: 'pendingClaim', label: '待领取', value: 0, color: '#d97706' },
   { key: 'claimed', label: '已领取', value: 0, color: '#16a34a' },
   { key: 'successHandled', label: '成功办理量', value: 0, color: '#0891b2' },
 ])
 
 const entries = [
-  { key: 'outboundRecord', title: '外呼记录', desc: '新增、查看、领取和跟进记录', icon: 'phone', color: '#2563eb', tint: '#eff6ff' },
+  { key: 'outboundRecord', title: '外呼记录', desc: '新增、查看、领取和跟进记录', icon: 'phone', color: '#2f7dff', tint: '#eff6ff' },
   { key: 'outboundPersonnel', title: '外呼人员', desc: '维护人员、角色、网格范围', icon: 'user-group', color: '#16a34a', tint: '#ecfdf5' },
   { key: 'outboundGrid', title: '网格管理', desc: '维护业务网格基础资料', icon: 'location', color: '#0891b2', tint: '#ecfeff' },
-  { key: 'bizPackage', title: '套餐管理', desc: '维护套餐名称、编码和价格', icon: 'goods', color: '#7c3aed', tint: '#f5f3ff' },
+  { key: 'bizPackage', title: '套餐管理', desc: '维护套餐名称、编码和价格', icon: 'home', color: '#7c3aed', tint: '#f5f3ff' },
   { key: 'customerInfo', title: '客户信息', desc: '查看和维护客户线索', icon: 'user', color: '#d97706', tint: '#fff7ed' },
-  { key: 'timeoutReminder', title: '超时提醒', desc: '查看超时未处理任务', icon: 'warning', color: '#dc2626', tint: '#fef2f2' },
-  { key: 'assignmentTree', title: '分发记录', desc: '查看外呼记录分发链路', icon: 'share', color: '#0f766e', tint: '#f0fdfa' },
+  { key: 'timeoutReminder', title: '超时提醒', desc: '查看超时未处理任务', icon: 'exclamation-circle', color: '#dc2626', tint: '#fef2f2' },
+  { key: 'assignmentTree', title: '分发记录', desc: '查看外呼记录分发链路', icon: 'arrow-right', color: '#2f7dff', tint: '#eff6ff' },
 ]
 
 function getValue(list: any[] | undefined, key: string) {
@@ -199,7 +199,7 @@ onMounted(loadSummary)
 <style scoped lang="scss">
 .business-workbench {
   min-height: 100vh;
-  background: #f4f7f6;
+  background: #f3f6fb;
 }
 
 .workbench-scroll {
@@ -213,10 +213,10 @@ onMounted(loadSummary)
 
 .overview {
   padding: 24rpx;
-  border: 1rpx solid #dfe9e7;
-  border-radius: 8rpx;
+  border: 1rpx solid #dbe8ff;
+  border-radius: 24rpx;
   background: #fff;
-  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.05);
+  box-shadow: 0 14rpx 34rpx rgba(47, 125, 255, 0.08);
 }
 
 .overview-head,
@@ -244,14 +244,14 @@ onMounted(loadSummary)
 }
 
 .overview-label {
-  color: #0f766e;
+  color: #2f7dff;
   font-size: 24rpx;
   font-weight: 600;
 }
 
 .overview-title {
   margin-top: 10rpx;
-  color: #0f172a;
+  color: #0b2b5c;
   font-size: 34rpx;
   font-weight: 800;
   line-height: 1.2;
@@ -270,8 +270,8 @@ onMounted(loadSummary)
   flex-shrink: 0;
   padding: 8rpx 12rpx;
   border-radius: 8rpx;
-  color: #0f766e;
-  background: #effaf7;
+  color: #2f7dff;
+  background: #eef5ff;
   font-size: 22rpx;
   font-weight: 650;
 }
@@ -285,14 +285,14 @@ onMounted(loadSummary)
 
 .flow-card {
   padding: 16rpx 8rpx;
-  border: 1rpx solid #e6efec;
-  border-radius: 8rpx;
-  background: #f8fbfa;
+  border: 1rpx solid #e3ebf7;
+  border-radius: 18rpx;
+  background: #f8fbff;
   text-align: center;
 }
 
 .flow-value {
-  color: #0f172a;
+  color: #0b2b5c;
   font-size: 32rpx;
   font-weight: 800;
 }
@@ -314,9 +314,9 @@ onMounted(loadSummary)
 .entry-item,
 .status-item {
   border: 1rpx solid #e8edf4;
-  border-radius: 8rpx;
+  border-radius: 20rpx;
   background: #fff;
-  box-shadow: 0 8rpx 26rpx rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.07);
 }
 
 .metric-card {
@@ -353,7 +353,7 @@ onMounted(loadSummary)
 
 .metric-value {
   margin: 16rpx 0 10rpx;
-  color: #0f172a;
+  color: #0b2b5c;
   font-size: 42rpx;
   font-weight: 800;
 }
@@ -366,7 +366,7 @@ onMounted(loadSummary)
 }
 
 .section-title {
-  color: #1f2937;
+  color: #0b2b5c;
   font-size: 30rpx;
   font-weight: 800;
 }
@@ -393,7 +393,7 @@ onMounted(loadSummary)
 .entry-icon {
   width: 72rpx;
   height: 72rpx;
-  border-radius: 8rpx;
+  border-radius: 18rpx;
 }
 
 .entry-copy {
@@ -402,7 +402,7 @@ onMounted(loadSummary)
 }
 
 .entry-title {
-  color: #111827;
+  color: #0b2b5c;
   font-size: 30rpx;
   font-weight: 700;
 }
@@ -425,7 +425,7 @@ onMounted(loadSummary)
 }
 
 .status-value {
-  color: #111827;
+  color: #0b2b5c;
   font-size: 36rpx;
   font-weight: 800;
 }

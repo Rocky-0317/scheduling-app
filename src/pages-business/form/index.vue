@@ -76,6 +76,7 @@
 
     <view v-if="!isView" class="yd-detail-footer">
       <wd-button type="primary" block :loading="submitLoading" @click="submitForm">
+        <wd-icon name="check-circle" size="28rpx" color="#fff" custom-class="button-icon" />
         保存
       </wd-button>
     </view>
@@ -392,5 +393,10 @@ onMounted(async () => {
   margin: 20rpx 24rpx;
   overflow: hidden;
   border-radius: 8rpx;
+}
+
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
 }
 </style>

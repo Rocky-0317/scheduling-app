@@ -36,6 +36,7 @@
         :loading="formLoading"
         @click="handleSubmit"
       >
+        <wd-icon name="edit" size="28rpx" color="#fff" custom-class="button-icon" />
         提交反馈
       </wd-button>
     </view>
@@ -138,6 +139,11 @@ function mockSubmitFeedback(data: FeedbackData): Promise<{ code: number, message
   border-radius: 12rpx;
   overflow: hidden;
   box-shadow: 0 3rpx 8rpx rgba(24, 144, 255, 0.06);
+}
+
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
 }
 
 .safe-area-inset-bottom {

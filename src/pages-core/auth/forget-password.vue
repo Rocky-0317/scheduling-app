@@ -51,9 +51,11 @@
         type="primary"
         @click="handleResetPassword"
       >
+        <wd-icon name="check-circle" size="28rpx" color="#fff" custom-class="button-icon" />
         重置密码
       </wd-button>
       <wd-button class="mt-2" block type="info" @click="goToLogin">
+        <wd-icon name="arrow-left" size="28rpx" color="#fff" custom-class="button-icon" />
         返回登录
       </wd-button>
     </view>

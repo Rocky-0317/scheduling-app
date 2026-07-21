@@ -6,7 +6,7 @@
       <view class="category-content">
         <view class="category-header">
           <view class="header-icon">
-            <wd-icon name="user-group" size="44rpx" color="#0f766e" />
+            <wd-icon name="user-group" size="44rpx" color="#2f7dff" />
           </view>
           <view class="header-copy">
             <view class="header-title">
@@ -21,7 +21,7 @@
         <view class="menu-list">
           <view v-for="menu in menus" :key="menu.key" class="menu-row" @click="navigateToMenu(menu)">
             <view class="row-icon" :style="getIconStyle(menu)">
-              <wd-icon :name="menu.icon" size="38rpx" :color="menu.iconColor || '#0f766e'" />
+              <wd-icon :name="menu.icon" size="38rpx" :color="menu.iconColor || '#2f7dff'" />
             </view>
             <view class="row-copy">
               <view class="row-title">
@@ -55,14 +55,14 @@ const { navigateToMenu } = useMenuNavigate()
 const menus = computed(() => getMenuGroups().find(group => group.key === 'personnel')?.menus || [])
 
 function getIconStyle(menu: MenuItem) {
-  return { backgroundColor: menu.iconColor ? `${menu.iconColor}14` : '#eef8f6' }
+  return { backgroundColor: menu.iconColor ? `${menu.iconColor}14` : '#eef5ff' }
 }
 </script>
 
 <style scoped lang="scss">
 .category-page {
   min-height: 100vh;
-  background: #f4f7f6;
+  background: #f3f6fb;
 }
 
 .category-scroll {
@@ -76,10 +76,10 @@ function getIconStyle(menu: MenuItem) {
 
 .category-header,
 .menu-row {
-  border: 1rpx solid #e2ebe8;
-  border-radius: 8rpx;
+  border: 1rpx solid #e3ebf7;
+  border-radius: 20rpx;
   background: #fff;
-  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
+  box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.07);
 }
 
 .category-header {
@@ -95,8 +95,8 @@ function getIconStyle(menu: MenuItem) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 8rpx;
-  background: #eef8f6;
+  border-radius: 18rpx;
+  background: #eef5ff;
 }
 
 .header-icon {
@@ -111,7 +111,7 @@ function getIconStyle(menu: MenuItem) {
 }
 
 .header-title {
-  color: #0f172a;
+  color: #0b2b5c;
   font-size: 36rpx;
   font-weight: 800;
 }
@@ -144,7 +144,7 @@ function getIconStyle(menu: MenuItem) {
 }
 
 .row-title {
-  color: #111827;
+  color: #0b2b5c;
   font-size: 30rpx;
   font-weight: 750;
 }

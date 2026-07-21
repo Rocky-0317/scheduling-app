@@ -43,6 +43,7 @@
         <!-- 保存按钮 -->
         <view class="mt-60rpx w-full">
           <wd-button type="primary" block @click="handleSaveQRCode">
+            <wd-icon name="check-circle" size="28rpx" color="#fff" custom-class="button-icon" />
             保存二维码图片
           </wd-button>
         </view>
@@ -89,3 +90,10 @@ async function handleSaveQRCode() {
   await saveImageToAlbum(qrCodeUrl.value, 'weixin_qrcode.png')
 }
 </script>
+
+<style scoped lang="scss">
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
+}
+</style>

@@ -44,6 +44,7 @@
         </text>
       </view>
       <wd-button block :loading="loading" type="primary" @click="handleLogin">
+        <wd-icon name="arrow-right" size="28rpx" color="#fff" custom-class="button-icon" />
         登录
       </wd-button>
     </view>

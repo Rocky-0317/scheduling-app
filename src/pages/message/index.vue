@@ -21,7 +21,19 @@
         <view class="store-grid">
           <view v-for="menu in menus" :key="menu.key" class="store-card" @click="navigateToMenu(menu)">
             <view class="store-icon" :style="getIconStyle(menu)">
-              <wd-icon :name="menu.icon" size="42rpx" :color="menu.iconColor || '#0f766e'" />
+              <view v-if="isStoreIcon(menu)" class="store-mark" :style="{ '--store-color': menu.iconColor || '#2f7dff' }">
+                <view class="store-mark__awning" />
+                <view class="store-mark__body">
+                  <view />
+                  <view />
+                </view>
+              </view>
+              <view v-else-if="isPackageIcon(menu)" class="package-mark" :style="{ '--package-color': menu.iconColor || '#dc2626' }">
+                <view class="package-mark__box" />
+                <view class="package-mark__lid" />
+                <view class="package-mark__tape" />
+              </view>
+              <wd-icon v-else :name="menu.icon" size="42rpx" :color="menu.iconColor || '#2f7dff'" />
             </view>
             <view class="store-title">
               {{ menu.name }}
@@ -52,7 +64,7 @@ const { navigateToMenu } = useMenuNavigate()
 const menus = computed(() => getMenuGroups().find(group => group.key === 'offlineStore')?.menus || [])
 
 function getIconStyle(menu: MenuItem) {
-  return { backgroundColor: menu.iconColor ? `${menu.iconColor}14` : '#eef8f6' }
+  return { backgroundColor: menu.iconColor ? `${menu.iconColor}14` : '#eef5ff' }
 }
 
 function getDesc(key: string) {
@@ -64,12 +76,20 @@ function getDesc(key: string) {
   }
   return map[key] || '进入门店业务'
 }
+
+function isStoreIcon(menu: MenuItem) {
+  return menu.key === 'storeList' || menu.icon === 'shop'
+}
+
+function isPackageIcon(menu: MenuItem) {
+  return menu.key === 'bizPackage'
+}
 </script>
 
 <style scoped lang="scss">
 .category-page {
   min-height: 100vh;
-  background: #f4f7f6;
+  background: #f3f6fb;
 }
 
 .category-scroll {
@@ -83,10 +103,10 @@ function getDesc(key: string) {
 
 .category-header,
 .store-card {
-  border: 1rpx solid #e2ebe8;
-  border-radius: 8rpx;
+  border: 1rpx solid #e3ebf7;
+  border-radius: 20rpx;
   background: #fff;
-  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
+  box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.07);
 }
 
 .category-header {
@@ -98,7 +118,7 @@ function getDesc(key: string) {
 }
 
 .header-title {
-  color: #0f172a;
+  color: #0b2b5c;
   font-size: 36rpx;
   font-weight: 800;
 }
@@ -113,8 +133,8 @@ function getDesc(key: string) {
   flex-shrink: 0;
   padding: 8rpx 14rpx;
   border-radius: 8rpx;
-  color: #0f766e;
-  background: #effaf7;
+  color: #2f7dff;
+  background: #eef5ff;
   font-size: 23rpx;
   font-weight: 700;
 }
@@ -141,9 +161,102 @@ function getDesc(key: string) {
   border-radius: 8rpx;
 }
 
+.store-mark {
+  position: relative;
+  width: 44rpx;
+  height: 40rpx;
+}
+
+.store-mark__awning {
+  position: absolute;
+  left: 2rpx;
+  top: 0;
+  width: 40rpx;
+  height: 14rpx;
+  border: 4rpx solid var(--store-color);
+  border-bottom: 0;
+  border-radius: 8rpx 8rpx 3rpx 3rpx;
+}
+
+.store-mark__awning::before,
+.store-mark__awning::after {
+  position: absolute;
+  top: 0;
+  bottom: -2rpx;
+  width: 4rpx;
+  background: var(--store-color);
+  content: '';
+}
+
+.store-mark__awning::before {
+  left: 12rpx;
+}
+
+.store-mark__awning::after {
+  right: 12rpx;
+}
+
+.store-mark__body {
+  position: absolute;
+  left: 6rpx;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  width: 32rpx;
+  height: 24rpx;
+  padding: 7rpx 6rpx 0;
+  border: 4rpx solid var(--store-color);
+  border-radius: 3rpx;
+  box-sizing: border-box;
+}
+
+.store-mark__body view {
+  width: 6rpx;
+  height: 13rpx;
+  background: var(--store-color);
+}
+
+.package-mark {
+  position: relative;
+  width: 44rpx;
+  height: 42rpx;
+}
+
+.package-mark__box {
+  position: absolute;
+  left: 4rpx;
+  bottom: 0;
+  width: 36rpx;
+  height: 28rpx;
+  border: 4rpx solid var(--package-color);
+  border-radius: 5rpx;
+  box-sizing: border-box;
+}
+
+.package-mark__lid {
+  position: absolute;
+  left: 0;
+  top: 3rpx;
+  width: 44rpx;
+  height: 13rpx;
+  border: 4rpx solid var(--package-color);
+  border-radius: 5rpx;
+  box-sizing: border-box;
+}
+
+.package-mark__tape {
+  position: absolute;
+  left: 19rpx;
+  top: 5rpx;
+  width: 6rpx;
+  height: 35rpx;
+  border-radius: 999rpx;
+  background: var(--package-color);
+}
+
 .store-title {
   margin-top: 16rpx;
-  color: #111827;
+  color: #0b2b5c;
   font-size: 29rpx;
   font-weight: 750;
 }

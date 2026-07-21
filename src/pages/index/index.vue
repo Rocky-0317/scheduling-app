@@ -1,35 +1,40 @@
 <template>
   <view class="home-page">
-    <wd-navbar title="配送调度系统" placeholder safe-area-inset-top fixed custom-class="home-navbar">
+    <wd-navbar title="配送调度" placeholder safe-area-inset-top fixed custom-class="home-navbar">
       <template #right>
         <view class="nav-action" @click="gotoSearch">
-          <wd-icon name="search-line" size="38rpx" color="#111827" />
+          <wd-icon name="search-line" size="38rpx" color="#2f7dff" />
         </view>
       </template>
     </wd-navbar>
 
     <scroll-view scroll-y class="home-scroll">
-      <view class="summary-panel">
-        <view class="summary-head">
-          <view class="brand-lockup">
-            <wd-img src="/static/logo.svg" width="72rpx" height="72rpx" mode="aspectFit" />
-            <view>
-              <view class="summary-title">
-                今日调度
-              </view>
-              <view class="summary-subtitle">
-                {{ greeting }}，{{ userInfo.nickname || userInfo.username || '管理员' }}
-              </view>
-            </view>
+      <view class="hero-panel">
+        <view class="hero-copy">
+          <view class="hero-kicker">
+            TODAY DISPATCH
           </view>
-          <view class="run-status">
-            <wd-icon name="check-circle" size="28rpx" color="#0f766e" />
-            <text>{{ summary.runStatus || '正常' }}</text>
+          <view class="hero-title">
+            今日调度
           </view>
+          <view class="hero-subtitle">
+            {{ greeting }}，{{ userInfo.nickname || userInfo.username || '管理员' }}
+          </view>
+        </view>
+        <view class="hero-status">
+          <wd-icon name="check-circle" size="28rpx" color="#2f7dff" />
+          <text>{{ summary.runStatus || '运行正常' }}</text>
+        </view>
+        <view class="hero-visual">
+          <view class="route-line line-a" />
+          <view class="route-line line-b" />
+          <view class="route-node node-a" />
+          <view class="route-node node-b" />
+          <view class="route-node node-c" />
         </view>
       </view>
 
-      <view class="metric-grid compact">
+      <view class="metric-grid">
         <view v-for="item in metrics" :key="item.key" class="metric-card">
           <view class="metric-head">
             <text>{{ item.title }}</text>
@@ -44,7 +49,7 @@
         </view>
       </view>
 
-      <view class="section-block">
+      <view class="section-block category-section">
         <view class="section-title-row">
           <view>
             <view class="section-title">
@@ -57,8 +62,15 @@
         </view>
         <view class="category-grid">
           <view v-for="item in categoryEntries" :key="item.key" class="category-card" @click="goTab(item.path)">
-            <view class="category-icon" :style="{ backgroundColor: item.tint }">
-              <wd-icon :name="item.icon" size="42rpx" :color="item.color" />
+            <view class="category-icon">
+              <view v-if="item.key === 'store'" class="store-mark">
+                <view class="store-mark__awning" />
+                <view class="store-mark__body">
+                  <view />
+                  <view />
+                </view>
+              </view>
+              <wd-icon v-else :name="item.icon" size="42rpx" color="#2f7dff" />
             </view>
             <view class="category-copy">
               <view class="category-title">
@@ -68,7 +80,26 @@
                 {{ item.desc }}
               </view>
             </view>
-            <wd-icon name="arrow-right" size="28rpx" color="#94a3b8" />
+            <wd-icon name="arrow-right" size="28rpx" color="#9ca3af" />
+          </view>
+        </view>
+      </view>
+
+      <view class="section-block quick-section">
+        <view class="section-title-row">
+          <view>
+            <view class="section-title">
+              推荐操作
+            </view>
+            <view class="section-subtitle">
+              高频业务快捷入口
+            </view>
+          </view>
+        </view>
+        <view class="quick-grid">
+          <view v-for="item in quickActions" :key="item.key" class="quick-card" @click="goModule(item.module)">
+            <wd-icon :name="item.icon" size="38rpx" color="#2f7dff" />
+            <text>{{ item.title }}</text>
           </view>
         </view>
       </view>
@@ -100,17 +131,25 @@ const { userInfo } = storeToRefs(userStore)
 
 const summary = ref<OutboundWorkbenchSummary>({})
 const metrics = ref([
-  { key: 'unassigned', title: '待分发', value: 0, desc: '等待调度', color: '#2563eb' },
+  { key: 'unassigned', title: '待分发', value: 0, desc: '等待调度', color: '#2f7dff' },
   { key: 'pendingClaim', title: '待领取', value: 0, desc: '待业务处理', color: '#d97706' },
   { key: 'claimed', title: '已领取', value: 0, desc: '正在跟进', color: '#16a34a' },
   { key: 'successHandled', title: '成功办理', value: 0, desc: '已完成', color: '#0891b2' },
 ])
 
 const categoryEntries = [
-  { key: 'dispatch', title: '调度', desc: '外呼、分发、网格、超时', icon: 'phone', color: '#0f766e', tint: '#effaf7', path: '/pages/bpm/index' },
-  { key: 'personnel', title: '人员', desc: '人员账号、角色与业务范围', icon: 'user-group', color: '#2563eb', tint: '#eff6ff', path: '/pages/contact/index' },
-  { key: 'store', title: '门店', desc: '套餐、客户、门店资料', icon: 'shop', color: '#d97706', tint: '#fff7ed', path: '/pages/message/index' },
+  { key: 'dispatch', title: '调度', desc: '外呼、分发、网格、超时', icon: 'phone', path: '/pages/bpm/index' },
+  { key: 'personnel', title: '人员', desc: '账号、角色与业务范围', icon: 'user-group', path: '/pages/contact/index' },
+  { key: 'store', title: '门店', desc: '套餐、客户、门店资料', icon: 'store', path: '/pages/message/index' },
 ]
+
+const quickActions = [
+  { key: 'workbench', title: '业务工作台', icon: 'dashboard', module: 'workbench' },
+  { key: 'outboundRecord', title: '外呼记录', icon: 'phone', module: 'outboundRecord' },
+  { key: 'assignmentTree', title: '分发记录', icon: 'arrow-right', module: 'assignmentTree' },
+  { key: 'timeoutReminder', title: '超时提醒', icon: 'exclamation-circle', module: 'timeoutReminder' },
+]
+
 const greeting = computed(() => {
   const hour = new Date().getHours()
   if (hour < 6)
@@ -154,6 +193,10 @@ function gotoSearch() {
 }
 
 function goModule(module: string) {
+  if (module === 'workbench') {
+    uni.navigateTo({ url: '/pages-business/workbench/index' })
+    return
+  }
   uni.navigateTo({ url: `/pages-business/manager/index?module=${module}` })
 }
 
@@ -169,7 +212,7 @@ onShow(() => {
 <style lang="scss" scoped>
 .home-page {
   min-height: 100vh;
-  background: #f4f7f6;
+  background: #f3f6fb;
 }
 
 .home-scroll {
@@ -182,63 +225,128 @@ onShow(() => {
   justify-content: center;
   width: 64rpx;
   height: 64rpx;
+  border-radius: 50%;
+  background: #eef5ff;
 }
 
-.summary-panel,
+.hero-panel,
 .section-block,
 .metric-card {
-  border: 1rpx solid #e2ebe8;
-  border-radius: 8rpx;
-  background: #fff;
-  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.05);
+  border: 1rpx solid rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14rpx 38rpx rgba(47, 125, 255, 0.08);
 }
 
-.summary-panel {
+.hero-panel {
+  position: relative;
+  min-height: 330rpx;
   margin: 24rpx 24rpx 0;
-  padding: 24rpx;
+  overflow: hidden;
+  border-radius: 10rpx 52rpx 52rpx 52rpx;
+  background:
+    radial-gradient(circle at 82% 30%, rgba(47, 125, 255, 0.18) 0, rgba(47, 125, 255, 0) 220rpx),
+    linear-gradient(118deg, #ffffff 0%, #f7fbff 56%, #eaf3ff 100%);
 }
 
-.summary-head,
-.brand-lockup,
-.run-status,
-.section-title-row {
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  width: 440rpx;
+  padding: 42rpx 34rpx;
+}
+
+.hero-kicker {
+  color: #2f7dff;
+  font-size: 20rpx;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+.hero-title {
+  margin-top: 18rpx;
+  color: #0b2b5c;
+  font-size: 52rpx;
+  font-weight: 950;
+  line-height: 1.05;
+}
+
+.hero-subtitle {
+  margin-top: 14rpx;
+  color: #5f6f89;
+  font-size: 26rpx;
+  line-height: 1.42;
+}
+
+.hero-status {
+  position: absolute;
+  left: 34rpx;
+  bottom: 32rpx;
+  z-index: 1;
   display: flex;
   align-items: center;
-}
-
-.summary-head,
-.section-title-row {
-  justify-content: space-between;
-  gap: 18rpx;
-}
-
-.brand-lockup {
-  min-width: 0;
-  flex: 1;
-  gap: 18rpx;
-}
-
-.summary-title {
-  color: #111827;
-  font-size: 34rpx;
-  font-weight: 800;
-}
-
-.summary-subtitle {
-  margin-top: 6rpx;
-  color: #64748b;
-  font-size: 24rpx;
-}
-
-.run-status {
   gap: 8rpx;
-  flex-shrink: 0;
-  padding: 8rpx 12rpx;
-  border-radius: 8rpx;
-  color: #0f766e;
-  background: #effaf7;
-  font-size: 22rpx;
-  font-weight: 650;
+  padding: 10rpx 16rpx;
+  border-radius: 999rpx;
+  color: #0b2b5c;
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 23rpx;
+  font-weight: 750;
+}
+
+.hero-visual {
+  position: absolute;
+  right: -42rpx;
+  top: 26rpx;
+  width: 280rpx;
+  height: 280rpx;
+  border: 22rpx solid rgba(47, 125, 255, 0.12);
+  border-radius: 50%;
+}
+
+.route-line {
+  position: absolute;
+  height: 4rpx;
+  border-radius: 999rpx;
+  background: rgba(47, 125, 255, 0.74);
+  transform-origin: left center;
+}
+
+.line-a {
+  left: 54rpx;
+  top: 112rpx;
+  width: 158rpx;
+  transform: rotate(24deg);
+}
+
+.line-b {
+  left: 76rpx;
+  top: 172rpx;
+  width: 128rpx;
+  transform: rotate(-28deg);
+}
+
+.route-node {
+  position: absolute;
+  width: 28rpx;
+  height: 28rpx;
+  border: 6rpx solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: #2f7dff;
+}
+
+.node-a {
+  left: 42rpx;
+  top: 100rpx;
+}
+
+.node-b {
+  right: 56rpx;
+  top: 152rpx;
+}
+
+.node-c {
+  left: 82rpx;
+  bottom: 68rpx;
 }
 
 .metric-grid {
@@ -248,20 +356,17 @@ onShow(() => {
   margin: 22rpx 24rpx 0;
 }
 
-.metric-grid.compact {
-  margin-top: 16rpx;
-}
-
 .metric-card {
-  min-height: 148rpx;
-  padding: 22rpx;
+  min-height: 156rpx;
+  padding: 24rpx;
+  border-radius: 26rpx;
 }
 
 .metric-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #64748b;
+  color: #6b7280;
   font-size: 24rpx;
 }
 
@@ -272,49 +377,57 @@ onShow(() => {
 }
 
 .metric-value {
-  margin-top: 16rpx;
-  color: #0f172a;
-  font-size: 42rpx;
-  font-weight: 800;
+  margin-top: 14rpx;
+  color: #0b2b5c;
+  font-size: 48rpx;
+  font-weight: 950;
 }
 
 .metric-desc {
-  margin-top: 6rpx;
-  color: #94a3b8;
+  margin-top: 4rpx;
+  color: #9ca3af;
   font-size: 22rpx;
 }
 
 .section-block {
   margin: 24rpx 24rpx 0;
-  padding: 24rpx;
+  padding: 26rpx;
+  border-radius: 30rpx;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
 }
 
 .section-title {
-  color: #111827;
-  font-size: 30rpx;
-  font-weight: 800;
+  color: #0b2b5c;
+  font-size: 32rpx;
+  font-weight: 900;
 }
 
 .section-subtitle {
-  margin-top: 6rpx;
-  color: #64748b;
-  font-size: 22rpx;
+  margin-top: 8rpx;
+  color: #7a828d;
+  font-size: 23rpx;
 }
 
 .category-grid {
   display: grid;
   gap: 16rpx;
-  margin-top: 22rpx;
+  margin-top: 24rpx;
 }
 
 .category-card {
   display: flex;
   align-items: center;
   gap: 18rpx;
-  min-height: 112rpx;
+  min-height: 118rpx;
   padding: 20rpx;
-  border: 1rpx solid #e2ebe8;
-  border-radius: 8rpx;
+  border: 1rpx solid #edf0f2;
+  border-radius: 24rpx;
   background: #fbfdff;
 }
 
@@ -322,10 +435,66 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72rpx;
-  height: 72rpx;
+  width: 76rpx;
+  height: 76rpx;
   flex-shrink: 0;
-  border-radius: 8rpx;
+  border-radius: 24rpx;
+  background: #eef5ff;
+}
+
+.store-mark {
+  position: relative;
+  width: 44rpx;
+  height: 40rpx;
+}
+
+.store-mark__awning {
+  position: absolute;
+  left: 2rpx;
+  top: 0;
+  width: 40rpx;
+  height: 14rpx;
+  border: 4rpx solid #2f7dff;
+  border-bottom: 0;
+  border-radius: 8rpx 8rpx 3rpx 3rpx;
+}
+
+.store-mark__awning::before,
+.store-mark__awning::after {
+  position: absolute;
+  top: 0;
+  bottom: -2rpx;
+  width: 4rpx;
+  background: #2f7dff;
+  content: '';
+}
+
+.store-mark__awning::before {
+  left: 12rpx;
+}
+
+.store-mark__awning::after {
+  right: 12rpx;
+}
+
+.store-mark__body {
+  position: absolute;
+  left: 6rpx;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  width: 32rpx;
+  height: 24rpx;
+  padding: 7rpx 6rpx 0;
+  border: 4rpx solid #2f7dff;
+  border-radius: 3rpx;
+  box-sizing: border-box;
+}
+
+.store-mark__body view {
+  width: 6rpx;
+  height: 13rpx;
+  background: #2f7dff;
 }
 
 .category-copy {
@@ -334,21 +503,42 @@ onShow(() => {
 }
 
 .category-title {
-  color: #111827;
+  color: #0b2b5c;
   font-size: 30rpx;
-  font-weight: 750;
+  font-weight: 850;
 }
 
 .category-desc {
   overflow: hidden;
-  margin-top: 6rpx;
-  color: #64748b;
+  margin-top: 7rpx;
+  color: #7a828d;
   font-size: 23rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+.quick-card {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  min-height: 92rpx;
+  padding: 0 22rpx;
+  border: 1rpx solid #edf0f2;
+  border-radius: 22rpx;
+  color: #0b2b5c;
+  background: #f8fbff;
+  font-size: 25rpx;
+  font-weight: 800;
+}
+
 .bottom-space {
-  height: 48rpx;
+  height: 56rpx;
 }
 </style>

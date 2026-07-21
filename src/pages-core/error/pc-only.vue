@@ -31,9 +31,17 @@ function handleBack() {
 
       <view class="mt-32rpx w-full">
         <wd-button :block="true" variant="plain" @click="handleBack">
+          <wd-icon name="arrow-left" size="28rpx" color="#475569" custom-class="button-icon" />
           返回
         </wd-button>
       </view>
     </view>
   </view>
 </template>
+
+<style scoped lang="scss">
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
+}
+</style>

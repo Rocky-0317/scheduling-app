@@ -14,6 +14,7 @@
         {{ message }}
       </text>
       <wd-button v-if="status === 'failed'" class="mt-48rpx" type="primary" @click="handleBack">
+        <wd-icon name="arrow-left" size="28rpx" color="#fff" custom-class="button-icon" />
         {{ purpose === 'bind' ? '返回账号安全' : '返回登录' }}
       </wd-button>
     </view>

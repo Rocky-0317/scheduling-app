@@ -1,44 +1,60 @@
 /** 认证页面公共样式 */
 
-// 页面容器
 .auth-container {
   position: relative;
-  display: flex;
-  flex-direction: column;
   min-height: 100vh;
   overflow: hidden;
-  background: linear-gradient(180deg, #eef8f6 0%, #f7faf9 45%, #ffffff 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #f3f6fb 52%, #ffffff 100%);
   box-sizing: border-box;
 }
 
-// 表单容器
-.form-container {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  margin: 0 24rpx 24rpx;
-  padding: 30rpx 30rpx 34rpx;
-  border: 1rpx solid #dfe9e7;
-  border-radius: 8rpx;
-  background: #fff;
-  box-shadow: 0 16rpx 46rpx rgba(15, 23, 42, 0.08);
+.auth-container::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 520rpx;
+  background:
+    radial-gradient(circle at 18% 10%, rgba(223, 237, 255, 0.9) 0, rgba(223, 237, 255, 0) 260rpx),
+    linear-gradient(115deg, #ffffff 0%, #eaf2ff 100%);
+  content: '';
 }
 
-// 输入项
+.form-container {
+  position: relative;
+  z-index: 2;
+  margin: -88rpx 28rpx 28rpx;
+  padding: 44rpx 36rpx 38rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.86);
+  border-radius: 54rpx 54rpx 40rpx 40rpx;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 28rpx 74rpx rgba(34, 76, 145, 0.1);
+  backdrop-filter: blur(18rpx);
+}
+
 .input-item {
   display: flex;
   align-items: center;
   min-height: 96rpx;
   margin-bottom: 20rpx;
   padding: 0 24rpx;
-  border: 1rpx solid #dfe9e7;
-  border-radius: 8rpx;
-  background: #f8fbfa;
+  border: 1rpx solid #e3ebf7;
+  border-radius: 18rpx;
+  background: #fbfdff;
 
   :deep(.wd-input) {
     flex: 1;
     margin-left: 16rpx;
     background: transparent;
+  }
+
+  :deep(.wd-input__inner) {
+    color: #0b2b5c;
+    font-weight: 650;
+  }
+
+  :deep(.wd-input__placeholder) {
+    color: #9ca3af;
   }
 
   :deep(.wd-picker) {
@@ -47,19 +63,18 @@
   }
 
   :deep(.wd-picker__field) {
-    background: transparent;
     padding: 0;
+    background: transparent;
   }
 
-  // 移除 picker 的边框，保持与 input 一致
   :deep(.wd-picker__cell) {
-    background: transparent !important;
     padding: 0 !important;
+    background: transparent !important;
   }
 
   :deep(.wd-cell) {
-    background: transparent !important;
     padding: 0 !important;
+    background: transparent !important;
 
     &::after {
       display: none !important;
@@ -71,15 +86,15 @@
   }
 }
 
-// 第三方登录图标
 .icon-item {
-  width: 80rpx;
-  height: 80rpx;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  background: #f5f7fa;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 22rpx;
+  background: #eef5ff;
+  box-shadow: 0 10rpx 24rpx rgba(47, 125, 255, 0.1);
 }
 
 .social-item {
@@ -88,14 +103,21 @@
   align-items: center;
   flex-direction: column;
   gap: 12rpx;
-  color: #666;
+  color: #6b7280;
   font-size: 24rpx;
 }
 
 :deep(.wd-button.is-block) {
-  height: 92rpx;
-  border-radius: 8rpx;
+  height: 96rpx;
+  border-radius: 999rpx;
   font-size: 30rpx;
-  font-weight: 700;
-  box-shadow: 0 12rpx 26rpx rgba(15, 118, 110, 0.22);
+  font-weight: 800;
+  background: linear-gradient(135deg, #2f7dff 0%, #1d6df2 100%) !important;
+  border-color: #2f7dff !important;
+  box-shadow: 0 18rpx 34rpx rgba(47, 125, 255, 0.28);
+}
+
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
 }

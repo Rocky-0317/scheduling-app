@@ -1,82 +1,176 @@
 <template>
-  <view class="yd-page-container">
-    <!-- 顶部背景区域 -->
-    <view class="header-bg h-120rpx w-full flex items-center justify-center" />
-
-    <!-- 用户信息卡片 -->
-    <view class="relative mx-24rpx -mt-60rpx">
-      <view
-        class="user-card flex items-center rounded-12rpx bg-white p-32rpx"
-        @click="handleGoProfile"
-      >
-        <view class="avatar-wrapper mr-24rpx">
-          <wd-img :src="userInfo.avatar" width="120rpx" height="120rpx" mode="aspectFill" round />
-        </view>
-        <view class="flex-1">
-          <view class="mb-8rpx text-40rpx text-[#323333] font-semibold">
-            {{ userInfo.nickname || userInfo.username }}
+  <view class="yd-page-container mine-page">
+    <scroll-view scroll-y class="mine-scroll">
+      <view class="mine-content">
+        <view class="mine-hero" @click="handleGoProfile">
+          <view class="hero-copy">
+            <view class="hero-kicker">
+              MY CENTER
+            </view>
+            <view class="hero-title">
+              我的
+            </view>
+            <view class="hero-subtitle">
+              账号资料、安全设置与服务支持
+            </view>
           </view>
-          <view class="text-30rpx text-[#777]">
-            {{ userProfile ? (userProfile.dept?.name || '暂无部门') : '' }}
+          <view class="hero-orbit">
+            <view class="orbit-node node-a" />
+            <view class="orbit-node node-b" />
+            <view class="orbit-line" />
           </view>
         </view>
-      </view>
-    </view>
 
-    <!-- 菜单区域 -->
-    <view class="mx-24rpx mt-32rpx">
-      <wd-cell-group custom-class="menu-group" border>
-        <TenantVisitPicker
-          v-if="tenantEnabled && hasAccessByCodes(['system:tenant:visit'])"
-          @confirm="handleTenantConfirm"
-        >
-          <template #default="{ value }">
-            <wd-cell title="当前租户" :value="value" is-link>
-              <template #prefix>
-                <wd-icon name="home" size="20px" color="#1677ff" class="mr-16rpx" />
-              </template>
-            </wd-cell>
-          </template>
-        </TenantVisitPicker>
-        <wd-cell title="个人资料" is-link @click="handleGoProfile">
-          <template #prefix>
-            <wd-icon name="user" size="20px" color="#1890ff" class="mr-16rpx" />
-          </template>
-        </wd-cell>
-        <wd-cell title="账号安全" is-link @click="handleGoSecurity">
-          <template #prefix>
-            <wd-icon name="lock" size="20px" color="#52c41a" class="mr-16rpx" />
-          </template>
-        </wd-cell>
-      </wd-cell-group>
-      <wd-cell-group custom-class="menu-group mt-24rpx" border>
-        <wd-cell title="常见问题" is-link @click="handleGoFaq">
-          <template #prefix>
-            <wd-icon name="exclamation-circle" size="20px" color="#faad14" class="mr-16rpx" />
-          </template>
-        </wd-cell>
-        <wd-cell title="意见反馈" is-link @click="handleGoFeedback">
-          <template #prefix>
-            <wd-icon name="edit" size="20px" color="#722ed1" class="mr-16rpx" />
-          </template>
-        </wd-cell>
-        <wd-cell title="联系客服" is-link @click="handleGoContact">
-          <template #prefix>
-            <wd-icon name="phone" size="20px" color="#13c2c2" class="mr-16rpx" />
-          </template>
-        </wd-cell>
-        <wd-cell title="应用设置" is-link @click="handleGoSettings">
-          <template #prefix>
-            <wd-icon name="settings" size="20px" color="#1890ff" class="mr-16rpx" />
-          </template>
-        </wd-cell>
-      </wd-cell-group>
-      <view class="mt-48rpx">
-        <wd-button block type="danger" @click="handleLogout">
+        <view class="profile-panel" @click="handleGoProfile">
+          <view class="avatar-shell">
+            <wd-img :src="userInfo.avatar" width="116rpx" height="116rpx" mode="aspectFill" round />
+          </view>
+          <view class="profile-copy">
+            <view class="profile-name">
+              {{ userInfo.nickname || userInfo.username || '未命名用户' }}
+            </view>
+            <view class="profile-meta">
+              {{ deptName }}
+            </view>
+          </view>
+          <view class="profile-action">
+            <wd-icon name="arrow-right" size="30rpx" color="#9aa8bc" />
+          </view>
+        </view>
+
+        <view class="summary-grid">
+          <view class="summary-item">
+            <view class="summary-value">
+              {{ roleCount }}
+            </view>
+            <view class="summary-label">
+              角色
+            </view>
+          </view>
+          <view class="summary-item">
+            <view class="summary-value text-fit">
+              {{ postCount }}
+            </view>
+            <view class="summary-label">
+              岗位
+            </view>
+          </view>
+          <view class="summary-item">
+            <view class="summary-value status-text">
+              正常
+            </view>
+            <view class="summary-label">
+              账号状态
+            </view>
+          </view>
+        </view>
+
+        <view class="quick-grid">
+          <view
+            v-for="item in quickActions"
+            :key="item.title"
+            class="quick-card"
+            @click="item.action"
+          >
+            <view class="quick-icon" :style="{ backgroundColor: item.tint }">
+              <wd-icon :name="item.icon" size="38rpx" :color="item.color" />
+            </view>
+            <text>{{ item.title }}</text>
+          </view>
+        </view>
+
+        <view class="section-card">
+          <view class="section-head">
+            <view>
+              <view class="section-title">
+                账号管理
+              </view>
+              <view class="section-subtitle">
+                个人资料与安全能力
+              </view>
+            </view>
+          </view>
+
+          <TenantVisitPicker
+            v-if="tenantEnabled && hasAccessByCodes(['system:tenant:visit'])"
+            @confirm="handleTenantConfirm"
+          >
+            <template #default="{ value }">
+              <view class="menu-row">
+                <view class="menu-left">
+                  <view class="menu-icon tenant">
+                    <wd-icon name="home" size="32rpx" color="#2f7dff" />
+                  </view>
+                  <view class="menu-copy">
+                    <view class="menu-title">
+                      当前租户
+                    </view>
+                    <view class="menu-desc">
+                      {{ value || '请选择租户' }}
+                    </view>
+                  </view>
+                </view>
+                <wd-icon name="arrow-right" size="28rpx" color="#9aa8bc" />
+              </view>
+            </template>
+          </TenantVisitPicker>
+
+          <view v-for="item in accountMenus" :key="item.title" class="menu-row" @click="item.action">
+            <view class="menu-left">
+              <view class="menu-icon" :style="{ backgroundColor: item.tint }">
+                <wd-icon :name="item.icon" size="32rpx" :color="item.color" />
+              </view>
+              <view class="menu-copy">
+                <view class="menu-title">
+                  {{ item.title }}
+                </view>
+                <view class="menu-desc">
+                  {{ item.desc }}
+                </view>
+              </view>
+            </view>
+            <wd-icon name="arrow-right" size="28rpx" color="#9aa8bc" />
+          </view>
+        </view>
+
+        <view class="section-card">
+          <view class="section-head">
+            <view>
+              <view class="section-title">
+                服务支持
+              </view>
+              <view class="section-subtitle">
+                帮助、反馈与应用设置
+              </view>
+            </view>
+          </view>
+
+          <view v-for="item in supportMenus" :key="item.title" class="menu-row" @click="item.action">
+            <view class="menu-left">
+              <view class="menu-icon" :style="{ backgroundColor: item.tint }">
+                <wd-icon :name="item.icon" size="32rpx" :color="item.color" />
+              </view>
+              <view class="menu-copy">
+                <view class="menu-title">
+                  {{ item.title }}
+                </view>
+                <view class="menu-desc">
+                  {{ item.desc }}
+                </view>
+              </view>
+            </view>
+            <wd-icon name="arrow-right" size="28rpx" color="#9aa8bc" />
+          </view>
+        </view>
+
+        <wd-button block type="danger" custom-class="logout-button" @click="handleLogout">
+          <wd-icon name="arrow-right" size="28rpx" color="#fff" custom-class="button-icon" />
           退出登录
         </wd-button>
+
+        <view class="bottom-space" />
       </view>
-    </view>
+    </scroll-view>
   </view>
 </template>
 
@@ -108,46 +202,61 @@ const toast = useToast()
 const dialog = useDialog()
 const { hasAccessByCodes } = useAccess()
 const { userInfo } = storeToRefs(userStore)
-const userProfile = ref<UserProfileVO | null>(null) // 用户详细信息
-const tenantEnabled = computed(() => import.meta.env.VITE_APP_TENANT_ENABLE === 'true') // 租户开关
+const userProfile = ref<UserProfileVO | null>(null)
+const tenantEnabled = computed(() => import.meta.env.VITE_APP_TENANT_ENABLE === 'true')
 
-/** 页面加载时获取用户信息 */
+const deptName = computed(() => userProfile.value?.dept?.name || '暂无部门')
+const roleCount = computed(() => userProfile.value?.roles?.length || 0)
+const postCount = computed(() => userProfile.value?.posts?.length || 0)
+
+const quickActions = [
+  { title: '资料', icon: 'user', color: '#2f7dff', tint: '#eff6ff', action: handleGoProfile },
+  { title: '安全', icon: 'lock', color: '#16a34a', tint: '#ecfdf5', action: handleGoSecurity },
+  { title: '反馈', icon: 'edit', color: '#7c3aed', tint: '#f5f3ff', action: handleGoFeedback },
+  { title: '客服', icon: 'phone', color: '#0891b2', tint: '#ecfeff', action: handleGoContact },
+]
+
+const accountMenus = [
+  { title: '个人资料', desc: '头像、昵称、手机和邮箱', icon: 'user', color: '#2f7dff', tint: '#eff6ff', action: handleGoProfile },
+  { title: '账号安全', desc: '密码修改与第三方绑定', icon: 'lock', color: '#16a34a', tint: '#ecfdf5', action: handleGoSecurity },
+]
+
+const supportMenus = [
+  { title: '常见问题', desc: '查看操作说明和问题解答', icon: 'exclamation-circle', color: '#d97706', tint: '#fff7ed', action: handleGoFaq },
+  { title: '意见反馈', desc: '提交建议或问题反馈', icon: 'edit', color: '#7c3aed', tint: '#f5f3ff', action: handleGoFeedback },
+  { title: '联系客服', desc: '二维码、电话和服务时间', icon: 'phone', color: '#0891b2', tint: '#ecfeff', action: handleGoContact },
+  { title: '应用设置', desc: '协议、隐私和本地设置', icon: 'settings', color: '#2f7dff', tint: '#eff6ff', action: handleGoSettings },
+]
+
 onMounted(async () => {
   userProfile.value = await getUserProfile()
   await userStore.fetchUserInfo()
 })
 
-/** 跳转到个人资料 */
 function handleGoProfile() {
   uni.navigateTo({ url: '/pages-core/user/profile/index' })
 }
 
-/** 跳转到账号安全 */
 function handleGoSecurity() {
   uni.navigateTo({ url: '/pages-core/user/security/index' })
 }
 
-/** 跳转到常见问题 */
 function handleGoFaq() {
   uni.navigateTo({ url: '/pages-core/user/faq/index' })
 }
 
-/** 跳转到意见反馈 */
 function handleGoFeedback() {
   uni.navigateTo({ url: '/pages-core/user/feedback/index' })
 }
 
-/** 跳转联系客服 */
 function handleGoContact() {
   uni.navigateTo({ url: '/pages-core/user/contact/index' })
 }
 
-/** 跳转到应用设置 */
 function handleGoSettings() {
   uni.navigateTo({ url: '/pages-core/user/settings/index' })
 }
 
-/** 切换当前访问的租户 */
 async function handleTenantConfirm(tenant: TenantVO) {
   const currentTenantId = userStore.visitTenantId || userStore.tenantId
   if (tenant.id === currentTenantId) {
@@ -164,7 +273,6 @@ async function handleTenantConfirm(tenant: TenantVO) {
   } catch {
     return
   }
-  // 访问租户只切换数据上下文，用户与权限仍沿用登录租户
   userStore.setVisitTenantId(restoreLoginTenant ? null : tenant.id)
   dictStore.clearDictCache()
   toast.success(restoreLoginTenant ? '已恢复登录租户' : `已切换至${tenant.name}`)
@@ -173,7 +281,6 @@ async function handleTenantConfirm(tenant: TenantVO) {
   }, 500)
 }
 
-/** 退出登录 */
 async function handleLogout() {
   try {
     await dialog.confirm({
@@ -193,26 +300,312 @@ async function handleLogout() {
 </script>
 
 <style lang="scss" scoped>
-// 顶部渐变背景
-.header-bg {
-  background: linear-gradient(135deg, #1890ff 0%, #36cfc9 100%);
+.mine-page {
+  min-height: 100vh;
+  background: #f3f6fb;
 }
 
-// 用户卡片阴影
-.user-card {
-  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.08);
+.mine-scroll {
+  min-height: 0;
+  flex: 1;
 }
 
-// 头像边框
-.avatar-wrapper {
-  border: 4rpx solid #f5f5f5;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+.mine-content {
+  padding: 28rpx 24rpx 0;
 }
 
-// 菜单组样式
-:deep(.menu-group) {
-  border-radius: 12rpx;
+.mine-hero {
+  position: relative;
+  min-height: 220rpx;
   overflow: hidden;
-  box-shadow: 0 3rpx 8rpx rgba(24, 144, 255, 0.06);
+  border: 1rpx solid #dce8f8;
+  border-radius: 28rpx;
+  background:
+    radial-gradient(circle at 82% 34%, rgba(47, 125, 255, 0.14) 0, rgba(47, 125, 255, 0) 190rpx),
+    linear-gradient(135deg, #ffffff 0%, #f7fbff 58%, #edf5ff 100%);
+  box-shadow: 0 20rpx 48rpx rgba(31, 90, 180, 0.1);
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 2;
+  padding: 34rpx 32rpx;
+}
+
+.hero-kicker {
+  color: #2f7dff;
+  font-size: 21rpx;
+  font-weight: 900;
+}
+
+.hero-title {
+  margin-top: 20rpx;
+  color: #081638;
+  font-size: 48rpx;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.hero-subtitle {
+  margin-top: 18rpx;
+  color: #64748b;
+  font-size: 25rpx;
+}
+
+.hero-orbit {
+  position: absolute;
+  right: -26rpx;
+  top: 30rpx;
+  width: 210rpx;
+  height: 160rpx;
+  border: 18rpx solid rgba(47, 125, 255, 0.08);
+  border-radius: 50%;
+}
+
+.orbit-line {
+  position: absolute;
+  left: 28rpx;
+  top: 78rpx;
+  width: 156rpx;
+  height: 5rpx;
+  border-radius: 999rpx;
+  background: rgba(47, 125, 255, 0.26);
+  transform: rotate(-18deg);
+}
+
+.orbit-node {
+  position: absolute;
+  z-index: 2;
+  width: 22rpx;
+  height: 22rpx;
+  border-radius: 50%;
+  background: #2f7dff;
+  box-shadow: 0 0 0 10rpx rgba(47, 125, 255, 0.12);
+}
+
+.node-a {
+  left: 46rpx;
+  top: 58rpx;
+}
+
+.node-b {
+  right: 42rpx;
+  bottom: 48rpx;
+}
+
+.profile-panel,
+.section-card,
+.quick-card,
+.summary-item {
+  border: 1rpx solid #e3ebf7;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14rpx 34rpx rgba(34, 76, 145, 0.07);
+}
+
+.profile-panel {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  margin-top: 22rpx;
+  padding: 26rpx;
+  border-radius: 26rpx;
+}
+
+.avatar-shell {
+  flex-shrink: 0;
+  padding: 6rpx;
+  border: 1rpx solid #e3ebf7;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 12rpx 26rpx rgba(47, 125, 255, 0.12);
+}
+
+.profile-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-name {
+  overflow: hidden;
+  color: #0b2b5c;
+  font-size: 36rpx;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-meta {
+  overflow: hidden;
+  margin-top: 10rpx;
+  color: #64748b;
+  font-size: 25rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 54rpx;
+  height: 54rpx;
+  border-radius: 50%;
+  background: #f6f9fd;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+
+.summary-item {
+  min-height: 112rpx;
+  padding: 20rpx 8rpx;
+  border-radius: 22rpx;
+  text-align: center;
+}
+
+.summary-value {
+  color: #0b2b5c;
+  font-size: 34rpx;
+  font-weight: 950;
+}
+
+.status-text {
+  color: #16a34a;
+  font-size: 28rpx;
+}
+
+.text-fit {
+  max-width: 100%;
+}
+
+.summary-label {
+  margin-top: 8rpx;
+  color: #7a8799;
+  font-size: 22rpx;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14rpx;
+  margin-top: 22rpx;
+}
+
+.quick-card {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 12rpx;
+  min-height: 130rpx;
+  justify-content: center;
+  border-radius: 22rpx;
+  color: #18233a;
+  font-size: 24rpx;
+  font-weight: 750;
+}
+
+.quick-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62rpx;
+  height: 62rpx;
+  border-radius: 18rpx;
+}
+
+.section-card {
+  margin-top: 22rpx;
+  padding: 26rpx 24rpx 10rpx;
+  border-radius: 26rpx;
+}
+
+.section-head {
+  margin-bottom: 16rpx;
+}
+
+.section-title {
+  color: #0b2b5c;
+  font-size: 31rpx;
+  font-weight: 900;
+}
+
+.section-subtitle {
+  margin-top: 7rpx;
+  color: #7a8799;
+  font-size: 23rpx;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  min-height: 104rpx;
+  border-top: 1rpx solid #edf2f8;
+}
+
+.menu-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  gap: 18rpx;
+}
+
+.menu-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68rpx;
+  height: 68rpx;
+  flex-shrink: 0;
+  border-radius: 20rpx;
+}
+
+.menu-icon.tenant {
+  background: #eff6ff;
+}
+
+.menu-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.menu-title {
+  color: #0b2b5c;
+  font-size: 28rpx;
+  font-weight: 800;
+}
+
+.menu-desc {
+  overflow: hidden;
+  margin-top: 6rpx;
+  color: #7a8799;
+  font-size: 23rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.logout-button) {
+  height: 90rpx;
+  margin-top: 30rpx;
+  border-radius: 24rpx;
+  font-size: 29rpx;
+  font-weight: 800;
+  box-shadow: 0 16rpx 30rpx rgba(220, 38, 38, 0.18);
+}
+
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
+}
+
+.bottom-space {
+  height: 58rpx;
 }
 </style>

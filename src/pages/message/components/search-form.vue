@@ -4,7 +4,8 @@
     <view class="flex-1" @click="visible = true">
       <wd-search :placeholder="placeholder" hide-cancel disabled />
     </view>
-    <view class="text-28rpx text-[#1890ff]" @click="handleReadAll">
+    <view class="read-all-action" @click="handleReadAll">
+      <wd-icon name="check-circle" size="26rpx" color="#1890ff" />
       全部已读
     </view>
   </view>
@@ -37,9 +38,11 @@
       <yd-search-date-range v-model="formData.createTime" label="发送时间" />
       <view class="yd-search-form-actions">
         <wd-button class="flex-1" variant="plain" @click="handleReset">
+          <wd-icon name="close" size="26rpx" color="#475569" custom-class="button-icon" />
           重置
         </wd-button>
         <wd-button class="flex-1" type="primary" @click="handleSearch">
+          <wd-icon name="search-line" size="26rpx" color="#fff" custom-class="button-icon" />
           搜索
         </wd-button>
       </view>
@@ -100,3 +103,20 @@ function handleReset() {
   emit('reset')
 }
 </script>
+
+<style scoped lang="scss">
+.read-all-action {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  flex-shrink: 0;
+  color: #1890ff;
+  font-size: 28rpx;
+  font-weight: 650;
+}
+
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
+}
+</style>

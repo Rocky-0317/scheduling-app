@@ -50,6 +50,7 @@
       <!-- 按钮 -->
       <view class="mt-30rpx">
         <wd-button block type="primary" :loading="submitting" @click="handleConfirm">
+          <wd-icon name="check-circle" size="28rpx" color="#fff" custom-class="button-icon" />
           确定
         </wd-button>
       </view>
@@ -146,3 +147,10 @@ async function handleConfirm() {
   }
 }
 </script>
+
+<style scoped lang="scss">
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
+}
+</style>

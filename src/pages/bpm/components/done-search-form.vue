@@ -29,9 +29,11 @@
       <yd-search-date-range v-model="formData.createTime" label="发起时间" />
       <view class="yd-search-form-actions">
         <wd-button class="flex-1" variant="plain" @click="handleReset">
+          <wd-icon name="close" size="26rpx" color="#475569" custom-class="button-icon" />
           重置
         </wd-button>
         <wd-button class="flex-1" type="primary" @click="handleSearch">
+          <wd-icon name="search-line" size="26rpx" color="#fff" custom-class="button-icon" />
           搜索
         </wd-button>
       </view>
@@ -107,3 +109,10 @@ function handleReset() {
   emit('reset')
 }
 </script>
+
+<style scoped lang="scss">
+:deep(.button-icon) {
+  margin-right: 8rpx;
+  vertical-align: -3rpx;
+}
+</style>

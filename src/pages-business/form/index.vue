@@ -115,6 +115,7 @@ const datePickerValue = ref<number>(Date.now())
 const activeDateKey = ref('')
 const roleOptions = ref<any[]>([])
 const businessTypeOptions = ref<Array<{ label: string, value: string }>>([])
+// grid value统一为字符串名称，对齐网页端
 const gridOptions = ref<Array<{ label: string, value: string }>>([])
 const config = computed(() => getModuleConfig(props.module))
 const isView = computed(() => props.mode === 'view' || config.value.readonly)
@@ -132,7 +133,7 @@ const needRequireBusinessType = computed(() => ['salesperson', 'offline_peripher
 const needRequireGrid = computed(() => ['salesperson', 'offline_peripheral_stores'].includes(selectedRole.value?.roleKey))
 const filteredBusinessTypeOptions = computed(() => {
   const roleKey = selectedRole.value?.roleKey
-  if (!roleKey || ['offline_store_manager', 'offline_peripheral_stores'].includes(roleKey)) {
+  if (!isPersonnelModule.value || !roleKey || ['offline_store_manager', 'offline_peripheral_stores'].includes(roleKey)) {
     return businessTypeOptions.value
   }
   return businessTypeOptions.value.filter(item => !['2', '3', '4'].includes(String(item.value)))
@@ -334,9 +335,8 @@ function resolveRoleIdFromRoleName(roleId: any, roleName?: string) {
 }
 
 async function loadRoleOptions() {
-  if (!isPersonnelModule.value) {
+  if (!isPersonnelModule.value)
     return
-  }
   const res = await businessApi.listRoleOptions()
   roleOptions.value = (res.rows || [])
     .filter(role => role.roleKey !== 'admin')
@@ -349,9 +349,6 @@ async function loadRoleOptions() {
 }
 
 async function loadBusinessTypeOptions() {
-  if (!isPersonnelModule.value) {
-    return
-  }
   const rows = await businessApi.listBusinessTypeOptions()
   businessTypeOptions.value = (rows || [])
     .filter(item => item.status === undefined || String(item.status) === '0')
@@ -363,10 +360,10 @@ async function loadBusinessTypeOptions() {
 }
 
 async function loadGridOptions(force = false) {
-  if (!isPersonnelModule.value || (!force && gridOptions.value.length > 0)) {
+  if (!force && gridOptions.value.length > 0)
     return
-  }
   const res = await businessApi.listActiveGridOptions()
+  // 核心修复：value使用网格中文名称，和网页端统一
   gridOptions.value = (res.rows || []).map(item => ({
     label: item.gridName || '',
     value: item.gridName || '',
@@ -386,7 +383,9 @@ watch(() => formData.value.roleId, (next, prev) => {
 })
 
 onMounted(async () => {
-  await Promise.all([loadRoleOptions(), loadBusinessTypeOptions()])
+  await loadRoleOptions()
+  await loadBusinessTypeOptions()
+  await loadGridOptions()
   await loadDetail()
   if (isPersonnelModule.value && needShowGridType.value) {
     await loadGridOptions(true)

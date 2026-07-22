@@ -59,7 +59,7 @@ const httpInterceptor = {
 
     for (const v of whiteList) {
       if (options.url && options.url.includes(v)) {
-        isToken = false
+        isToken = true
         break
       }
     }

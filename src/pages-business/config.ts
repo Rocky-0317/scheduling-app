@@ -120,7 +120,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     update: businessApi.updateOutboundPersonnel,
     remove: businessApi.deleteOutboundPersonnel,
     primaryKey: 'personName',
-    secondaryKeys: ['userName', 'phone', 'roleName', 'grid'],
+    secondaryKeys: ['userName', 'phone', 'roleName', 'businessType', 'grid'],
     badgeKey: 'status',
     badgeOptions: statusOptions,
     canCreate: true,

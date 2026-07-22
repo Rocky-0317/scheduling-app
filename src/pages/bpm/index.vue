@@ -98,7 +98,7 @@ definePage({
 })
 
 const { navigateToMenu } = useMenuNavigate()
-const menus = computed(() => getMenuGroups().find(group => group.key === 'dispatch')?.menus || [])
+const menus = computed(() => (getMenuGroups().find(group => group.key === 'dispatch')?.menus || []).filter(menu => menu.key !== 'businessWorkbench'))
 const primaryMenus = computed(() => menus.value.filter(menu => ['outboundRecord', 'assignmentTree', 'timeoutReminder', 'outboundGrid'].includes(menu.key)))
 
 function getIconStyle(menu: MenuItem) {
@@ -107,7 +107,6 @@ function getIconStyle(menu: MenuItem) {
 
 function getDesc(key: string) {
   const map: Record<string, string> = {
-    businessWorkbench: '查看今日调度概览',
     outboundRecord: '新增、领取、跟进外呼记录',
     assignmentTree: '查看任务分发链路',
     outboundGrid: '维护网格基础资料',

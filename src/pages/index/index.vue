@@ -85,7 +85,7 @@
         </view>
       </view>
 
-      <view class="section-block quick-section">
+      <view v-if="false" class="section-block quick-section">
         <view class="section-title-row">
           <view>
             <view class="section-title">
@@ -143,7 +143,7 @@ const categoryEntries = [
   { key: 'store', title: '门店', desc: '套餐、客户、门店资料', icon: 'store', path: '/pages/message/index' },
 ]
 
-const quickActions = [
+const quickActions: Array<{ key: string, title: string, icon: string, module: string }> = [
   { key: 'workbench', title: '业务工作台', icon: 'dashboard', module: 'workbench' },
   { key: 'outboundRecord', title: '外呼记录', icon: 'phone', module: 'outboundRecord' },
   { key: 'assignmentTree', title: '分发记录', icon: 'arrow-right', module: 'assignmentTree' },

@@ -195,6 +195,7 @@ async function loadDetail() {
     const detail = await config.value.get(Number(props.id))
     const nextData = { ...formData.value, ...(detail || {}) }
     if (isPersonnelModule.value) {
+      nextData.roleId = resolveRoleIdFromRoleName(nextData.roleId, detail?.roleName)
       nextData.businessType = normalizeMultiValue(detail?.businessType)
       nextData.grid = normalizeMultiValue(detail?.grid)
     }
@@ -315,12 +316,21 @@ function handlePickerOpen(field: BusinessField) {
 function handlePickerConfirm(field: BusinessField, value: any) {
   formData.value[field.key] = value
   if (field.key === 'roleId') {
+    formData.value.roleName = roleOptions.value.find(item => String(item.value) === String(value))?.label || ''
     formData.value.businessType = []
     formData.value.grid = []
     if (needShowGridType.value) {
       void loadGridOptions(true)
     }
   }
+}
+
+function resolveRoleIdFromRoleName(roleId: any, roleName?: string) {
+  if (roleId !== undefined && roleId !== null && roleId !== '') {
+    return roleId
+  }
+  const matchedRole = roleOptions.value.find(item => item.label === roleName)
+  return matchedRole?.value ?? roleId
 }
 
 async function loadRoleOptions() {

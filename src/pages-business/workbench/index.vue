@@ -25,35 +25,6 @@
           <view class="overview-date">
             数据日期 {{ summary.currentDate || today }}
           </view>
-          <view class="flow-grid">
-            <view v-for="item in statusItems" :key="item.key" class="flow-card">
-              <view class="flow-value">
-                {{ item.value ?? 0 }}
-              </view>
-              <view class="flow-label">
-                {{ item.label }}
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <view class="metrics">
-          <view v-for="item in metrics" :key="item.key" class="metric-card">
-            <view class="metric-top">
-              <view class="metric-icon" :style="{ backgroundColor: item.tint }">
-                <wd-icon :name="item.icon" size="34rpx" :color="item.color" />
-              </view>
-              <view class="metric-title">
-                {{ item.title }}
-              </view>
-            </view>
-            <view class="metric-value">
-              {{ item.value ?? 0 }}
-            </view>
-            <view class="metric-desc">
-              {{ item.description || '-' }}
-            </view>
-          </view>
         </view>
 
         <view class="section-head">
@@ -83,31 +54,6 @@
           </view>
         </view>
 
-        <view class="section-head">
-          <view>
-            <view class="section-title">
-              任务状态
-            </view>
-            <view class="section-subtitle">
-              今日任务流转概况
-            </view>
-          </view>
-        </view>
-        <view class="status-list">
-          <view v-for="item in statusItems" :key="item.key" class="status-item">
-            <view class="status-top">
-              <view class="status-name">
-                {{ item.label }}
-              </view>
-              <view class="status-value">
-                {{ item.value ?? 0 }}
-              </view>
-            </view>
-            <view class="status-bar">
-              <view class="status-progress" :style="{ width: getStatusWidth(item.value), backgroundColor: item.color }" />
-            </view>
-          </view>
-        </view>
         <view class="bottom-space" />
       </view>
     </scroll-view>
@@ -130,20 +76,6 @@ definePage({
 const today = new Date().toISOString().slice(0, 10)
 const summary = ref<OutboundWorkbenchSummary>({})
 
-const metrics = ref([
-  { key: 'unassigned', title: '待分发记录', value: 0, description: '等待调度处理', icon: 'clock-circle', color: '#2f7dff', tint: '#eff6ff' },
-  { key: 'pendingClaim', title: '待领取任务', value: 0, description: '业务人员待跟进', icon: 'user', color: '#d97706', tint: '#fff7ed' },
-  { key: 'claimed', title: '已领取任务', value: 0, description: '正在跟进处理', icon: 'check-circle', color: '#16a34a', tint: '#ecfdf5' },
-  { key: 'successHandled', title: '成功办理量', value: 0, description: '成功办理', icon: 'dashboard', color: '#0891b2', tint: '#ecfeff' },
-])
-
-const statusItems = ref([
-  { key: 'unassigned', label: '未分发', value: 0, color: '#2f7dff' },
-  { key: 'pendingClaim', label: '待领取', value: 0, color: '#d97706' },
-  { key: 'claimed', label: '已领取', value: 0, color: '#16a34a' },
-  { key: 'successHandled', label: '成功办理量', value: 0, color: '#0891b2' },
-])
-
 const entries = [
   { key: 'outboundRecord', title: '外呼记录', desc: '新增、查看、领取和跟进记录', icon: 'phone', color: '#2f7dff', tint: '#eff6ff' },
   { key: 'outboundPersonnel', title: '外呼人员', desc: '维护人员、角色、网格范围', icon: 'user-group', color: '#16a34a', tint: '#ecfdf5' },
@@ -154,26 +86,11 @@ const entries = [
   { key: 'assignmentTree', title: '分发记录', desc: '查看外呼记录分发链路', icon: 'arrow-right', color: '#2f7dff', tint: '#eff6ff' },
 ]
 
-function getValue(list: any[] | undefined, key: string) {
-  const candidates = key === 'successHandled'
-    ? ['successHandled', 'reviewRequired', 'successHandleTotal', 'successTotal', 'successCount', 'success']
-    : [key]
-  return list?.find(item => candidates.includes(item.key))?.value ?? 0
-}
-
 async function loadSummary() {
   uni.showLoading({ title: '加载中' })
   try {
     const data = await businessApi.workbenchSummary({ startDate: today, endDate: today })
     summary.value = data || {}
-    metrics.value = metrics.value.map(item => ({
-      ...item,
-      value: getValue(data?.cards, item.key),
-    }))
-    statusItems.value = statusItems.value.map(item => ({
-      ...item,
-      value: getValue(data?.taskStatuses, item.key),
-    }))
   } finally {
     uni.hideLoading()
   }
@@ -181,12 +98,6 @@ async function loadSummary() {
 
 function goModule(key: string) {
   uni.navigateTo({ url: `/pages-business/manager/index?module=${key}` })
-}
-
-function getStatusWidth(value: number | undefined) {
-  const max = Math.max(...statusItems.value.map(item => Number(item.value || 0)), 1)
-  const percent = Math.max(8, Math.round((Number(value || 0) / max) * 100))
-  return `${percent}%`
 }
 
 function handleBack() {
@@ -276,60 +187,13 @@ onMounted(loadSummary)
   font-weight: 650;
 }
 
-.flow-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12rpx;
-  margin-top: 22rpx;
-}
-
-.flow-card {
-  padding: 16rpx 8rpx;
-  border: 1rpx solid #e3ebf7;
-  border-radius: 18rpx;
-  background: #f8fbff;
-  text-align: center;
-}
-
-.flow-value {
-  color: #0b2b5c;
-  font-size: 32rpx;
-  font-weight: 800;
-}
-
-.flow-label {
-  margin-top: 6rpx;
-  color: #64748b;
-  font-size: 21rpx;
-}
-
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16rpx;
-  margin-top: 24rpx;
-}
-
-.metric-card,
-.entry-item,
-.status-item {
+.entry-item {
   border: 1rpx solid #e8edf4;
   border-radius: 20rpx;
   background: #fff;
   box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.07);
 }
 
-.metric-card {
-  padding: 24rpx;
-}
-
-.metric-top {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.metric-icon,
 .entry-icon {
   display: flex;
   align-items: center;
@@ -337,25 +201,9 @@ onMounted(loadSummary)
   flex-shrink: 0;
 }
 
-.metric-icon {
-  width: 58rpx;
-  height: 58rpx;
-  border-radius: 8rpx;
-}
-
-.metric-title,
-.metric-desc,
-.entry-desc,
-.status-name {
+.entry-desc {
   color: #64748b;
   font-size: 24rpx;
-}
-
-.metric-value {
-  margin: 16rpx 0 10rpx;
-  color: #0b2b5c;
-  font-size: 42rpx;
-  font-weight: 800;
 }
 
 .section-head {
@@ -377,8 +225,7 @@ onMounted(loadSummary)
   font-size: 23rpx;
 }
 
-.entry-list,
-.status-list {
+.entry-list {
   display: grid;
   gap: 16rpx;
 }
@@ -412,36 +259,6 @@ onMounted(loadSummary)
   margin-top: 8rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.status-item {
-  padding: 22rpx 24rpx;
-}
-
-.status-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.status-value {
-  color: #0b2b5c;
-  font-size: 36rpx;
-  font-weight: 800;
-}
-
-.status-bar {
-  overflow: hidden;
-  height: 10rpx;
-  margin-top: 18rpx;
-  border-radius: 999rpx;
-  background: #eef2f7;
-}
-
-.status-progress {
-  height: 100%;
-  min-width: 8%;
-  border-radius: 999rpx;
 }
 
 .bottom-space {

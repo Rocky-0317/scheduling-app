@@ -2,8 +2,29 @@
   <view class="yd-page-container yd-page-container-paging business-list">
     <wd-navbar :title="config.title" left-arrow placeholder safe-area-inset-top fixed @click-left="handleBack" />
 
-    <view class="list-tools">
-      <view class="filter-entry" @click="openSearch">
+    <view class="list-tools" :class="{ 'person-tools': isModernModule }">
+      <template v-if="isModernModule">
+        <view class="person-search-box">
+          <wd-icon name="search-line" size="32rpx" color="#9aa9bd" @click="submitQuickSearch" />
+          <input
+            v-model="quickKeyword"
+            class="person-search-input"
+            confirm-type="search"
+            :placeholder="quickSearchPlaceholder"
+            placeholder-class="person-search-placeholder"
+            @confirm="submitQuickSearch"
+          >
+          <wd-icon v-if="quickKeyword" name="close" size="28rpx" color="#9aa9bd" @click="clearQuickSearch" />
+        </view>
+        <view class="person-filter-btn" @click="openSearch">
+          <wd-icon name="filter" size="30rpx" color="#475569" />
+          <text>筛选</text>
+          <view v-if="activeSearchCount" class="filter-count person-filter-count">
+            {{ activeSearchCount }}
+          </view>
+        </view>
+      </template>
+      <view v-else class="filter-entry" @click="openSearch">
         <wd-icon name="filter" size="34rpx" color="#2f7dff" />
         <text class="filter-title">{{ searchPlaceholder }}</text>
         <view v-if="activeSearchCount" class="filter-count">
@@ -33,18 +54,51 @@
       @query="queryList"
     >
       <view class="p-24rpx">
-        <view v-for="item in list" :key="getItemId(item) || item.recordId || item.customerNumber" class="record-card">
+        <view
+          v-for="item in list"
+          :key="getItemId(item) || item.recordId || item.customerNumber"
+          class="record-card"
+          :class="{ 'person-card': isModernModule }"
+        >
           <view class="record-head" @click="tryOpenDetail(item)">
-            <view class="record-title">
+            <view v-if="isModernModule" class="person-profile">
+              <view class="person-avatar" :class="{ 'person-avatar--package': isPackageModule }">
+                <view v-if="isPackageModule" class="package-mark package-mark--avatar">
+                  <view class="package-mark__box" />
+                  <view class="package-mark__lid" />
+                  <view class="package-mark__tape" />
+                </view>
+                <wd-icon v-else :name="getModuleAvatarIcon()" size="42rpx" color="#2f7dff" />
+              </view>
+              <view class="person-title-wrap">
+                <view class="person-title-line">
+                  <view class="record-title person-name">
+                    {{ getValue(item, config.primaryKey) || '-' }}
+                  </view>
+                  <wd-tag v-if="config.badgeKey" custom-class="person-status-tag" :type="getStatusType(config.badgeKey, item[config.badgeKey], config.badgeOptions)" plain>
+                    {{ getStatusLabel(config.badgeKey, item[config.badgeKey], config.badgeOptions) }}
+                  </wd-tag>
+                </view>
+              </view>
+            </view>
+            <view v-else class="record-title">
               {{ getValue(item, config.primaryKey) || '-' }}
             </view>
-            <wd-tag v-if="config.badgeKey" :type="getStatusType(config.badgeKey, item[config.badgeKey], config.badgeOptions)" plain>
+            <wd-tag v-if="config.badgeKey && !isModernModule" :type="getStatusType(config.badgeKey, item[config.badgeKey], config.badgeOptions)" plain>
               {{ getStatusLabel(config.badgeKey, item[config.badgeKey], config.badgeOptions) }}
             </wd-tag>
           </view>
 
-          <view class="record-body" @click="tryOpenDetail(item)">
-            <view v-for="key in config.secondaryKeys" :key="key" class="record-line">
+          <view class="record-body" :class="{ 'person-body': isModernModule }" @click="tryOpenDetail(item)">
+            <view
+              v-for="key in getSecondaryKeys(item)"
+              :key="key"
+              class="record-line"
+              :class="{ 'person-line': isModernModule, 'person-line--wide': isWidePersonField(key) }"
+            >
+              <view v-if="isModernModule" class="person-line-icon">
+                <wd-icon :name="getFieldIcon(key)" size="28rpx" color="#7890ad" />
+              </view>
               <text class="record-label">{{ getFieldLabel(key) }}</text>
               <text class="record-text">{{ formatValue(item[key]) }}</text>
             </view>
@@ -61,7 +115,13 @@
             />
           </scroll-view>
 
-          <view class="record-actions">
+          <view v-if="isModernModule && config.remove" class="person-card-actions">
+            <view class="person-delete-button" @click.stop="removeItem(item)">
+              删除
+            </view>
+          </view>
+
+          <view v-if="!isModernModule" class="record-actions">
             <wd-button v-if="canOpenDetail(item)" size="small" plain @click="openDetail(item)">
               <wd-icon name="search-line" size="24rpx" color="#475569" custom-class="button-icon" />
               详情
@@ -119,23 +179,23 @@
     </wd-popup>
 
     <wd-popup v-model="searchVisible" position="bottom" custom-style="border-radius: 24rpx 24rpx 0 0;">
-      <view class="search-panel">
+      <view class="search-panel" :class="{ 'person-search-panel': isModernModule }">
         <view class="search-head">
           <view>
             <view class="search-title">
-              筛选{{ config.title }}
+              {{ isModernModule ? '高级筛选' : `筛选${config.title}` }}
             </view>
             <view class="search-subtitle">
-              填写条件后按列表查询
+              {{ isModernModule ? `组合条件定位${config.title}` : '填写条件后按列表查询' }}
             </view>
           </view>
           <wd-icon name="close" size="34rpx" color="#64748b" @click="searchVisible = false" />
         </view>
-        <view v-for="field in config.searchFields" :key="field.key" class="search-item">
+        <view v-for="field in config.searchFields" :key="field.key" class="search-item" :class="{ 'person-search-item': isModernModule }">
           <view class="search-label">
             {{ field.label }}
           </view>
-          <wd-radio-group v-if="field.type === 'radio'" v-model="searchForm[field.key]" type="button">
+          <wd-radio-group v-if="field.type === 'radio'" v-model="searchForm[field.key]" type="button" :class="{ 'person-radio-group': isModernModule }">
             <wd-radio value="">
               全部
             </wd-radio>
@@ -181,6 +241,7 @@ const config = computed(() => getModuleConfig(props.module))
 const list = ref<any[]>([])
 const pagingRef = ref<any>()
 const searchVisible = ref(false)
+const quickKeyword = ref('')
 const queryParams = ref<Record<string, any>>({})
 const searchForm = reactive<Record<string, any>>({})
 const timeoutConfigVisible = ref(false)
@@ -192,7 +253,16 @@ const timeoutConfig = reactive({
 
 const canEdit = computed(() => !config.value.readonly && !!config.value.update)
 const isTimeoutModule = computed(() => config.value.key === 'timeoutReminder')
+const isModernModule = computed(() => true)
+const isPackageModule = computed(() => config.value.key === 'bizPackage')
 const activeSearchCount = computed(() => Object.values(queryParams.value).filter(value => value !== undefined && value !== '').length)
+const quickSearchPlaceholder = computed(() => {
+  const labels = config.value.searchFields
+    .filter(field => field.type !== 'radio')
+    .slice(0, 3)
+    .map(field => field.label)
+  return labels.length ? `搜索${labels.join(' / ')}` : `搜索${config.value.title}`
+})
 const searchPlaceholder = computed(() => {
   const conditions = Object.entries(queryParams.value)
     .filter(([, value]) => value !== undefined && value !== '')
@@ -230,6 +300,7 @@ function openSearch() {
 
 function submitSearch() {
   queryParams.value = { ...searchForm }
+  quickKeyword.value = searchForm.personName || searchForm.phone || searchForm.userName || ''
   searchVisible.value = false
   reload()
 }
@@ -238,9 +309,31 @@ function resetSearch() {
   for (const key of Object.keys(searchForm)) {
     searchForm[key] = ''
   }
+  quickKeyword.value = ''
   queryParams.value = {}
   searchVisible.value = false
   reload()
+}
+
+function submitQuickSearch() {
+  if (!isModernModule.value) {
+    return
+  }
+  const keyword = quickKeyword.value.trim()
+  const params: Record<string, any> = {}
+  if (keyword) {
+    params[getQuickSearchKey(keyword)] = keyword
+  }
+  queryParams.value = params
+  for (const field of config.value.searchFields) {
+    searchForm[field.key] = params[field.key] ?? ''
+  }
+  reload()
+}
+
+function clearQuickSearch() {
+  quickKeyword.value = ''
+  resetSearch()
 }
 
 function openCreate() {
@@ -252,7 +345,8 @@ function openForm(item: any) {
 }
 
 function openDetail(item: any) {
-  uni.navigateTo({ url: `/pages-business/form/index?module=${config.value.key}&id=${getItemId(item) || item.recordId}&mode=view` })
+  const mode = canEdit.value ? '' : '&mode=view'
+  uni.navigateTo({ url: `/pages-business/form/index?module=${config.value.key}&id=${getItemId(item) || item.recordId}${mode}` })
 }
 
 function tryOpenDetail(item: any) {
@@ -310,7 +404,99 @@ function uploadImages(item: any) {
 }
 
 function getFieldLabel(key: string) {
+  const labelMap: Record<string, string> = {
+    roleName: '角色',
+    businessType: '业务类型',
+    grid: '网格',
+    phone: '联系电话',
+    userName: '登录账号',
+    personName: '人员姓名',
+  }
+  if (labelMap[key]) {
+    return labelMap[key]
+  }
   return [...config.value.searchFields, ...config.value.formFields].find(item => item.key === key)?.label || key
+}
+
+function getSecondaryKeys(item: Record<string, any>) {
+  if (!isModernModule.value) {
+    return config.value.secondaryKeys
+  }
+  return config.value.secondaryKeys.filter(key => key !== 'userName' || !item.personName)
+}
+
+function isWidePersonField(key: string) {
+  return false
+}
+
+function getFieldIcon(key: string) {
+  const iconMap: Record<string, string> = {
+    userName: 'user',
+    personName: 'user',
+    name: 'user',
+    customerNumber: 'phone',
+    phone: 'phone',
+    receiverName: 'user',
+    receiver: 'user',
+    roleName: 'check-circle',
+    businessType: 'list',
+    grid: 'location',
+    packageName: 'goods',
+    packageCode: 'list',
+    price: 'money-circle',
+    description: 'edit',
+    address: 'location',
+    storeUserName: 'shop',
+    orderTime: 'time',
+    followStatus: 'edit',
+    sortOrder: 'list',
+    gridCode: 'location',
+    remark: 'edit',
+    overdueDays: 'time',
+    assignedPersonName: 'user',
+    claimedTime: 'time',
+  }
+  return iconMap[key] || 'info-circle'
+}
+
+function getModuleAvatarIcon() {
+  const iconMap: Record<string, string> = {
+    outboundPersonnel: 'user',
+    customerInfo: 'user',
+    bizPackage: 'goods',
+    outboundGrid: 'location',
+    storeList: 'shop',
+    storeInfo: 'shop',
+    outboundRecord: 'phone',
+    timeoutReminder: 'time',
+    assignmentTree: 'list',
+  }
+  return iconMap[config.value.key] || 'list'
+}
+
+function getQuickSearchKey(keyword: string) {
+  const availableKeys = config.value.searchFields.map(field => field.key)
+  if (/^\d{6,}$/.test(keyword)) {
+    const numericKeys = ['phone', 'customerNumber', 'packageCode', 'gridCode', 'userName']
+    const matched = numericKeys.find(key => availableKeys.includes(key))
+    if (matched) {
+      return matched
+    }
+  }
+  const priorityKeys = [
+    config.value.primaryKey,
+    'personName',
+    'name',
+    'customerNumber',
+    'packageName',
+    'gridName',
+    'userName',
+    'phone',
+  ]
+  return priorityKeys.find(key => availableKeys.includes(key))
+    || config.value.searchFields.find(field => field.type !== 'radio')?.key
+    || config.value.searchFields[0]?.key
+    || config.value.primaryKey
 }
 
 function getValue(item: Record<string, any>, key: string) {
@@ -380,6 +566,63 @@ function previewImage(urls: string[], current: string) {
   background: #fff;
 }
 
+.person-tools {
+  gap: 18rpx;
+  padding: 20rpx 24rpx;
+  background: #eef5ff;
+}
+
+.person-search-box {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  min-width: 0;
+  flex: 1;
+  height: 80rpx;
+  padding: 0 24rpx;
+  border: 1rpx solid #e5edf8;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(15, 46, 92, 0.04);
+}
+
+.person-search-input {
+  min-width: 0;
+  flex: 1;
+  height: 80rpx;
+  color: #0f172a;
+  font-size: 27rpx;
+}
+
+:deep(.person-search-placeholder),
+.person-search-placeholder {
+  color: #9aa9bd;
+}
+
+.person-filter-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  width: 124rpx;
+  height: 80rpx;
+  flex-shrink: 0;
+  border: 1rpx solid #e5edf8;
+  border-radius: 18rpx;
+  color: #0f172a;
+  background: #fff;
+  box-shadow: 0 10rpx 24rpx rgba(15, 46, 92, 0.04);
+  font-size: 28rpx;
+  font-weight: 650;
+}
+
+.person-filter-count {
+  position: absolute;
+  right: -8rpx;
+  top: -8rpx;
+}
+
 .filter-entry {
   display: flex;
   align-items: center;
@@ -417,12 +660,20 @@ function previewImage(urls: string[], current: string) {
 }
 
 .record-card {
+  position: relative;
   margin-bottom: 20rpx;
   padding: 24rpx;
   border: 1rpx solid #eef2f7;
   border-radius: 20rpx;
   background: #fff;
   box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.07);
+}
+
+.person-card {
+  padding: 28rpx 24rpx 24rpx;
+  border-color: #edf3fb;
+  border-radius: 22rpx;
+  box-shadow: 0 12rpx 30rpx rgba(15, 46, 92, 0.06);
 }
 
 .record-head,
@@ -444,10 +695,112 @@ function previewImage(urls: string[], current: string) {
   white-space: nowrap;
 }
 
+.person-profile {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  gap: 18rpx;
+}
+
+.person-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72rpx;
+  height: 72rpx;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #eaf2ff;
+}
+
+.person-avatar--package {
+  border-radius: 8rpx;
+  background: #fef2f2;
+}
+
+.package-mark {
+  position: relative;
+  width: 44rpx;
+  height: 42rpx;
+  color: #dc2626;
+}
+
+.package-mark--avatar {
+  transform: scale(0.9);
+}
+
+.package-mark__box {
+  position: absolute;
+  left: 4rpx;
+  bottom: 0;
+  width: 36rpx;
+  height: 28rpx;
+  border: 4rpx solid currentColor;
+  border-radius: 5rpx;
+  box-sizing: border-box;
+}
+
+.package-mark__lid {
+  position: absolute;
+  left: 0;
+  top: 3rpx;
+  width: 44rpx;
+  height: 13rpx;
+  border: 4rpx solid currentColor;
+  border-radius: 5rpx;
+  box-sizing: border-box;
+}
+
+.package-mark__tape {
+  position: absolute;
+  left: 19rpx;
+  top: 5rpx;
+  width: 6rpx;
+  height: 35rpx;
+  border-radius: 999rpx;
+  background: currentColor;
+}
+
+.person-title-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
+.person-title-line {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  min-width: 0;
+}
+
+.person-name {
+  flex: 1;
+  color: #071d3a;
+  font-size: 34rpx;
+  font-weight: 850;
+}
+
+.person-account {
+  overflow: hidden;
+  margin-top: 6rpx;
+  color: #64748b;
+  font-size: 23rpx;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .record-body {
   display: grid;
   gap: 10rpx;
   margin-top: 18rpx;
+}
+
+.person-body {
+  display: grid;
+  gap: 10rpx;
+  margin-top: 20rpx;
+  padding-left: 94rpx;
 }
 
 .record-line {
@@ -458,10 +811,34 @@ function previewImage(urls: string[], current: string) {
   line-height: 1.5;
 }
 
+.person-line {
+  display: grid;
+  grid-template-columns: 34rpx 170rpx minmax(0, 1fr);
+  align-items: center;
+  gap: 10rpx;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.person-line--wide {
+  grid-column: 1 / -1;
+}
+
 .record-label {
   width: 150rpx;
   flex-shrink: 0;
   color: #94a3b8;
+}
+
+.person-line .record-label {
+  display: block;
+  width: auto;
+  margin-bottom: 0;
+  color: #5f7088;
+  font-size: 29rpx;
+  line-height: 1.35;
 }
 
 .record-text {
@@ -470,10 +847,52 @@ function previewImage(urls: string[], current: string) {
   word-break: break-word;
 }
 
+.person-line .record-text {
+  display: block;
+  color: #344256;
+  font-size: 28rpx;
+  font-weight: 500;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
 .record-actions {
   justify-content: flex-end;
   flex-wrap: wrap;
   margin-top: 20rpx;
+}
+
+:deep(.person-status-tag) {
+  height: 40rpx;
+  padding: 0 16rpx;
+  border: 0;
+  border-radius: 999rpx;
+  background: #e8f8ee;
+  color: #16a34a;
+  font-size: 22rpx;
+  font-weight: 750;
+}
+
+.person-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 20rpx;
+}
+
+.person-delete-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56rpx;
+  height: 50rpx;
+  padding: 0 15rpx;
+  border-radius: 8rpx;
+  color: #fff;
+  background: #409eff;
+  font-size: 20rpx;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .image-strip {
@@ -540,6 +959,13 @@ function previewImage(urls: string[], current: string) {
   background: #fff;
 }
 
+.person-search-panel {
+  max-height: 82vh;
+  padding: 30rpx 28rpx 40rpx;
+  border-radius: 28rpx 28rpx 0 0;
+  background: #f7faff;
+}
+
 .search-head {
   display: flex;
   align-items: flex-start;
@@ -548,10 +974,21 @@ function previewImage(urls: string[], current: string) {
   margin-bottom: 24rpx;
 }
 
+.person-search-panel .search-head {
+  padding: 4rpx 2rpx 8rpx;
+  margin-bottom: 18rpx;
+}
+
 .search-title {
   color: #0b2b5c;
   font-size: 32rpx;
   font-weight: 800;
+}
+
+.person-search-panel .search-title {
+  color: #071d3a;
+  font-size: 34rpx;
+  font-weight: 850;
 }
 
 .search-subtitle {
@@ -560,8 +997,22 @@ function previewImage(urls: string[], current: string) {
   font-size: 23rpx;
 }
 
+.person-search-panel .search-subtitle {
+  color: #7b8da5;
+  font-size: 24rpx;
+}
+
 .search-item {
   margin-bottom: 22rpx;
+}
+
+.person-search-item {
+  margin-bottom: 18rpx;
+  padding: 20rpx;
+  border: 1rpx solid #e5edf8;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(15, 46, 92, 0.035);
 }
 
 .search-label {
@@ -571,10 +1022,64 @@ function previewImage(urls: string[], current: string) {
   font-weight: 650;
 }
 
+.person-search-item .search-label {
+  margin-bottom: 12rpx;
+  color: #344256;
+  font-size: 25rpx;
+  font-weight: 750;
+}
+
+.person-search-item :deep(.wd-input) {
+  min-height: 72rpx;
+  padding: 0 18rpx;
+  border-radius: 14rpx;
+  background: #f5f8fc;
+}
+
+.person-search-item :deep(.wd-input__inner) {
+  color: #0f172a;
+  font-size: 27rpx;
+}
+
+.person-radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.person-radio-group :deep(.wd-radio) {
+  margin-right: 0;
+  margin-bottom: 0;
+}
+
+.person-radio-group :deep(.wd-radio__label) {
+  min-width: 104rpx;
+  height: 58rpx;
+  padding: 0 24rpx;
+  border-radius: 999rpx;
+  font-size: 25rpx;
+}
+
 .search-actions {
   display: flex;
   gap: 20rpx;
   margin-top: 30rpx;
+}
+
+.person-search-panel .search-actions {
+  position: sticky;
+  bottom: 0;
+  gap: 18rpx;
+  margin: 26rpx -2rpx 0;
+  padding-top: 18rpx;
+  background: #f7faff;
+}
+
+.person-search-panel .search-actions :deep(.wd-button) {
+  height: 76rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 750;
 }
 
 :deep(.button-icon) {

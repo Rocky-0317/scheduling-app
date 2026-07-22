@@ -90,7 +90,6 @@ export interface CustomerInfo {
   storeUserName?: string
   packageId?: number
   packageName?: string
-  packageCode?: string
   packagePrice?: string | number
   createTime?: string
 }
@@ -154,6 +153,22 @@ export interface AssignmentTreeNode extends OutboundRecord {
   claimedUserName?: string
   claimedTime?: string
   children?: AssignmentTreeNode[]
+}
+
+// ========== APP版本VO，对应后端 AppLatestVersionVo ==========
+export interface AppLatestVersionVo {
+  id?: number
+  appName?: string
+  platform?: string
+  versionName: string
+  versionCode: number
+  updateTitle: string
+  updateContent: string
+  forceUpdate: boolean
+  apkDownloadUrl?: string
+  apkFileName?: string
+  apkFileSize?: number
+  releaseTime?: string
 }
 
 function listByRuoyi<T>(url: string, params: Record<string, any>) {
@@ -309,5 +324,16 @@ export const businessApi = {
   },
   deleteCustomer(ids: number[]) {
     return http.delete(`/api/customer/${ids.join(',')}`)
+  },
+
+  // ========== 获取最新APP版本接口 ==========
+  getLatestAppVersion(params: {
+    platform: string
+    appName?: string
+    tenantId?: number
+    currentVersionCode?: number
+    expirySeconds?: number
+  }) {
+    return http.get<AppLatestVersionVo>('/api/app/version/latest', params)
   },
 }

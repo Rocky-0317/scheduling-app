@@ -20,7 +20,7 @@
     <wd-cell-group custom-class="cell-group mt-24rpx" border>
       <wd-cell title="部门" :value="userProfile?.dept?.name || '-'" />
       <wd-cell title="岗位" :value="userProfile?.posts?.map(p => p.name).join('、') || '-'" />
-      <wd-cell title="角色" :value="userProfile?.roles?.map(r => r.name).join('、') || '-'" />
+      <wd-cell title="角色" :value="roleNames" />
     </wd-cell-group>
 
     <!-- 头像裁剪 -->
@@ -42,7 +42,7 @@
 <script lang="ts" setup>
 import type { UserProfileVO } from '@/api/system/user/profile'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { getUserProfile, updateUserProfile } from '@/api/system/user/profile'
 import { getDictLabel } from '@/hooks/useDict'
 import { useUserStore } from '@/store/user'
@@ -62,6 +62,7 @@ const toast = useToast()
 const userStore = useUserStore()
 const loading = ref(true) // 用户信息加载状态
 const userProfile = ref<UserProfileVO | null>(null)
+const roleNames = computed(() => userProfile.value?.roles?.map(role => role.name).filter(Boolean).join('、') || '-')
 
 // 头像裁剪相关
 const showCropper = ref(false)
@@ -106,11 +107,9 @@ async function handleCropperConfirm(event: { tempFilePath: string }) {
     // 1.2 更新用户头像
     await updateUserProfile({ avatar: avatarUrl })
 
-    // 2.1 直接更新本地状态，避免重新加载
     if (userProfile.value) {
       userProfile.value.avatar = avatarUrl
     }
-    // 2.2 同步更新 userStore 中的头像
     userStore.setUserAvatar(avatarUrl)
     toast.success('头像修改成功')
   } catch (err) {

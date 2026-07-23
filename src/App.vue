@@ -1,107 +1,65 @@
 <script setup lang="ts">
 import { onHide, onLaunch, onShow } from '@dcloudio/uni-app'
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { navigateToInterceptor } from '@/router/interceptor'
 import { useDictStore, useTokenStore } from '@/store'
-import type { SysNotice } from '@/api/system/notice'
-import { getNotice, markNoticeRead } from '@/api/system/notice'
 
-const unreadNoticeDialog = ref(false)
-const unreadNoticeArr = ref<SysNotice[]>([])
-const currentUnreadNotice = ref<SysNotice>({} as SysNotice)
-const noticeReadLoading = ref(false)
-let unreadIndex = 0
+interface UpdatePopupParams {
+  latestVersion?: string
+  localVersion?: string
+  updateTitle?: string
+  updateContent?: string
+  downloadUrl?: string
+  forceUpdate?: boolean
+  onSkip?: () => void
+}
 
-const needUpdate = ref(false)
+const updateDialog = ref(false)
 const latestVersion = ref('')
+const localVersion = ref('')
+const updateTitle = ref('发现新版本')
+const updateContent = ref('请更新到最新版本后继续使用')
 const downloadUrl = ref('')
 const forceUpdate = ref(false)
+let skipUpdateHandler: (() => void) | undefined
 
-const hasCurrentUnreadContent = computed(() => {
-  const content = currentUnreadNotice.value.noticeContent
-  if (content == null)
-    return false
-  const text = String(content).replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()
-  return text !== '' || /<img\b/i.test(String(content))
-})
-
-async function getUnreadNoticeDetail(notice: SysNotice) {
-  if (!notice.noticeId)
-    return notice
-  if (notice.noticeContent && String(notice.noticeContent).trim() !== '')
-    return notice
-  const res = await getNotice(notice.noticeId)
-  return { ...notice, ...res }
-}
+function syncTabbarWhenPageVisible() {}
 
 onLaunch((options) => {
   console.log('App初始化', options)
-  uni.$on('app:openUnreadNoticePopup', async (params) => {
-    console.log('收到弹窗事件参数', params)
-    unreadNoticeArr.value = params.noticeList ?? []
-    needUpdate.value = params.needUpdate ?? false
-    latestVersion.value = params.latestVersion ?? ''
-    downloadUrl.value = params.downloadUrl ?? ''
-    forceUpdate.value = params.forceUpdate ?? false
-    unreadIndex = 0
-
-    if (unreadNoticeArr.value.length) {
-      currentUnreadNotice.value = await getUnreadNoticeDetail(unreadNoticeArr.value[unreadIndex])
-    } else {
-      currentUnreadNotice.value = {} as SysNotice
-    }
-
-    nextTick(() => {
-      unreadNoticeDialog.value = true
-      console.log('弹窗开关已打开', unreadNoticeDialog.value)
-    })
+  uni.$on('app:openUpdatePopup', (params: UpdatePopupParams = {}) => {
+    latestVersion.value = params.latestVersion || ''
+    localVersion.value = params.localVersion || ''
+    updateTitle.value = params.updateTitle || '发现新版本'
+    updateContent.value = params.updateContent || '请更新到最新版本后继续使用'
+    downloadUrl.value = params.downloadUrl || ''
+    forceUpdate.value = Boolean(params.forceUpdate)
+    skipUpdateHandler = params.onSkip
+    updateDialog.value = true
   })
 })
 
 onMounted(() => {
   // #ifdef H5
-  function syncTabbarWhenPageVisible() {}
   document.addEventListener('visibilitychange', syncTabbarWhenPageVisible)
   window.addEventListener('pageshow', syncTabbarWhenPageVisible)
   // #endif
 })
 
 onUnmounted(() => {
-  uni.$off('app:openUnreadNoticePopup')
+  uni.$off('app:openUpdatePopup')
   // #ifdef H5
   document.removeEventListener('visibilitychange', syncTabbarWhenPageVisible)
   window.removeEventListener('pageshow', syncTabbarWhenPageVisible)
   // #endif
 })
 
-async function closeUnreadNotice() {
-  if (noticeReadLoading.value)
-    return
-  if (forceUpdate.value)
-    return
-  const noticeId = currentUnreadNotice.value.noticeId
-  if (!noticeId) {
-    unreadNoticeDialog.value = false
+function closeUpdatePopup() {
+  if (forceUpdate.value) {
     return
   }
-
-  noticeReadLoading.value = true
-  try {
-    await markNoticeRead(noticeId)
-    unreadNoticeDialog.value = false
-    unreadIndex++
-
-    if (unreadIndex < unreadNoticeArr.value.length) {
-      currentUnreadNotice.value = await getUnreadNoticeDetail(unreadNoticeArr.value[unreadIndex])
-      setTimeout(() => {
-        nextTick(() => {
-          unreadNoticeDialog.value = true
-        })
-      }, 180)
-    }
-  } finally {
-    noticeReadLoading.value = false
-  }
+  skipUpdateHandler?.()
+  updateDialog.value = false
 }
 
 function handleUpdate() {
@@ -118,15 +76,17 @@ onShow((options) => {
   console.log('App.vue onShow', options)
   const tokenStore = useTokenStore()
   const dictStore = useDictStore()
-  if (tokenStore.updateNowTime().hasLogin && !dictStore.isLoaded) {
-    void dictStore.loadDictCacheWithRetry()
+  if (tokenStore.updateNowTime().hasLogin) {
+    if (!dictStore.isLoaded) {
+      void dictStore.loadDictCacheWithRetry()
+    }
+    void tokenStore.checkAppUpdate()
   }
   if (options?.path) {
     navigateToInterceptor.invoke({ url: `/${options.path}`, query: options.query })
   } else {
     navigateToInterceptor.invoke({ url: '/' })
   }
-  // tabbarStore.syncTabbarWhenPageAsync() 方法不存在已注释
 })
 
 onHide(() => {
@@ -136,180 +96,120 @@ onHide(() => {
 
 <template>
   <uni-popup
-    v-model="unreadNoticeDialog"
+    v-model="updateDialog"
     type="center"
     :mask-close="false"
     style="z-index: 9999999 !important;"
   >
-    <view class="notice-wrap">
-      <view class="notice-popup-header">
-        <view>
-          <view class="notice-popup-label">
-            <text>🔔</text>
-            <text>公告提醒</text>
-          </view>
-          <text class="notice-popup-title">{{ currentUnreadNotice.noticeTitle || '未命名公告' }}</text>
+    <view class="update-wrap">
+      <view class="update-header">
+        <view class="update-label">
+          APP 更新
         </view>
-        <view v-if="unreadNoticeArr.length > 1" class="notice-tag">
-          {{ unreadIndex + 1 }}/{{ unreadNoticeArr.length }}
+        <view class="update-title">
+          {{ updateTitle }}
+        </view>
+        <view class="update-version">
+          <text v-if="localVersion">当前版本 v{{ localVersion }}</text>
+          <text v-if="latestVersion">最新版本 v{{ latestVersion }}</text>
         </view>
       </view>
 
-      <view class="notice-popup-meta">
-        <text>{{ currentUnreadNotice.createBy || '系统' }}</text>
-        <text>{{ currentUnreadNotice.createTime || '-' }}</text>
-        <text v-if="needUpdate" class="update-tip">
-          {{ forceUpdate ? '【强制更新】' : '' }}发现新版本 v{{ latestVersion }}
-        </text>
+      <view class="update-content">
+        {{ updateContent }}
       </view>
 
-      <scroll-view scroll-y class="notice-popup-scroll">
-        <view v-if="hasCurrentUnreadContent" class="notice-popup-content">
-          <div v-html="currentUnreadNotice.noticeContent" />
-        </view>
-        <view v-else class="empty-tip">
-          暂无公告详情
-        </view>
-      </scroll-view>
-
-      <view class="notice-popup-footer">
-        <text v-if="!forceUpdate" class="notice-popup-tip">确认后标记本条公告已读</text>
-        <text v-if="forceUpdate" class="force-tip">当前版本已停用，请更新APP</text>
-
-        <view v-if="needUpdate" class="btn-row">
-          <button v-if="!forceUpdate" class="btn-cancel" :disabled="noticeReadLoading" @click="closeUnreadNotice">
+      <view class="update-footer">
+        <text v-if="forceUpdate" class="force-tip">当前版本不可继续使用，请更新 APP</text>
+        <view class="btn-row">
+          <button v-if="!forceUpdate" class="btn-cancel" @click="closeUpdatePopup">
             稍后再说
           </button>
-          <button class="btn-update" :disabled="noticeReadLoading" @click="handleUpdate">
+          <button class="btn-update" @click="handleUpdate">
             立即更新
           </button>
         </view>
-
-        <button v-else class="notice-btn" :disabled="noticeReadLoading" @click="closeUnreadNotice">
-          {{ noticeReadLoading ? '处理中...' : unreadIndex + 1 < unreadNoticeArr.length ? '已知晓，下一条' : '我知道了' }}
-        </button>
       </view>
     </view>
   </uni-popup>
 </template>
 
 <style lang="scss">
-.notice-wrap {
+.update-wrap {
   width: 620rpx;
+  padding: 36rpx 32rpx 32rpx;
+  border-radius: 18rpx;
   background: #fff;
-  border-radius: 16rpx;
-  padding: 32rpx;
 }
-.notice-popup-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16rpx;
+
+.update-header {
+  padding-bottom: 22rpx;
+  border-bottom: 1rpx solid #edf2f8;
 }
-.notice-popup-label {
-  display: flex;
-  align-items: center;
-  gap: 6rpx;
-  margin-bottom: 8rpx;
-  color: #409eff;
-  font-size: 26rpx;
-  font-weight: 600;
-}
-.notice-popup-title {
-  color: #333;
-  font-size: 36rpx;
+
+.update-label {
+  color: #2f7dff;
+  font-size: 25rpx;
   font-weight: 700;
-  line-height: 1.45;
-  word-break: break-word;
 }
-.notice-tag {
-  background: #e8f4ff;
-  color: #409eff;
-  font-size: 24rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 8rpx;
+
+.update-title {
+  margin-top: 12rpx;
+  color: #172033;
+  font-size: 38rpx;
+  font-weight: 800;
+  line-height: 1.35;
 }
-.notice-popup-meta {
+
+.update-version {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
-  margin: 12rpx 0;
-  color: #999;
+  gap: 14rpx;
+  margin-top: 14rpx;
+  color: #7a8799;
   font-size: 24rpx;
 }
-.update-tip {
-  color: #f56c6c;
+
+.update-content {
+  min-height: 150rpx;
+  padding: 28rpx 0;
+  color: #344054;
+  font-size: 28rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
 }
+
 .force-tip {
   display: block;
-  text-align: center;
+  margin-bottom: 18rpx;
   color: #f56c6c;
   font-size: 24rpx;
-  margin-bottom: 16rpx;
-}
-.notice-popup-scroll {
-  min-height: 360rpx;
-  max-height: 600rpx;
-}
-.notice-popup-content {
-  color: #333;
-  font-size: 28rpx;
-  line-height: 1.8;
-  word-break: break-word;
-  overflow-x: auto;
-  div {
-    width: 100%;
-  }
-}
-.empty-tip {
   text-align: center;
-  color: #999;
-  padding: 40rpx 0;
-  font-size: 26rpx;
 }
-.notice-popup-tip {
-  display: block;
-  text-align: center;
-  color: #999;
-  font-size: 24rpx;
-  margin-bottom: 16rpx;
-}
-.notice-btn {
-  width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  background: #409eff;
-  color: #fff;
-  border-radius: 12rpx;
-  font-size: 30rpx;
-  border: none;
-}
+
 .btn-row {
   display: flex;
-  gap: 20rpx;
   width: 100%;
+  gap: 20rpx;
 }
-.btn-cancel {
-  flex: 1;
-  height: 88rpx;
-  background: #eee;
-  color: #666;
-  border-radius: 12rpx;
-  font-size: 30rpx;
-  border: none;
-}
+
+.btn-cancel,
 .btn-update {
   flex: 1;
   height: 88rpx;
-  background: #f56c6c;
-  color: #fff;
+  border: none;
   border-radius: 12rpx;
   font-size: 30rpx;
-  border: none;
+  line-height: 88rpx;
 }
-.notice-btn[disabled],
-.btn-cancel[disabled],
-.btn-update[disabled] {
-  opacity: 0.6;
+
+.btn-cancel {
+  color: #667085;
+  background: #f2f4f7;
+}
+
+.btn-update {
+  color: #fff;
+  background: #2f7dff;
 }
 </style>

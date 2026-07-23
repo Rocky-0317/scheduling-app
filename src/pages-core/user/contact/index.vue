@@ -56,7 +56,7 @@
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { ref } from 'vue'
 import { navigateBackPlus } from '@/utils'
-import { saveImageToAlbum, staticUrl } from '@/utils/download'
+import { saveImageToAlbum } from '@/utils/download'
 
 definePage({
   style: {
@@ -67,8 +67,8 @@ definePage({
 
 const toast = useToast()
 
-const qrCodeUrl = ref(staticUrl('/static/qrcode.png')) // 客服二维码图片地址
-const servicePhone = ref('18818818818') // 客服电话号码
+const qrCodeUrl = ref('/static/qrcode.png') // 客服二维码图片地址
+const servicePhone = ref('15728728317') // 客服电话号码
 
 /** 返回上一页 */
 function handleBack() {

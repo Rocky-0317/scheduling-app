@@ -9,12 +9,12 @@ export interface UserProfileVO {
   mobile?: string
   sex?: number
   avatar?: string
-  loginIp: string
-  loginDate: string | number | Date
-  createTime: string | number | Date
-  roles: { id: number, name: string }[]
-  dept: { id: number, name: string }
-  posts: { id: number, name: string }[]
+  loginIp?: string
+  loginDate?: string | number | Date
+  createTime?: string | number | Date
+  roles?: { id: number, name: string }[]
+  dept?: { id: number, name: string }
+  posts?: { id: number, name: string }[]
 }
 
 /** 更新个人信息请求 */
@@ -34,7 +34,7 @@ export interface UpdatePasswordReqVO {
 
 /** 获取登录用户个人信息 */
 export function getUserProfile() {
-  return http.get<UserProfileVO>('/system/user/profile/get')
+  return http.get<UserProfileVO>('/system/user/profile')
 }
 
 /** 修改用户个人信息 */

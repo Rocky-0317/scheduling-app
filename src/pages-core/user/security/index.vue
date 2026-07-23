@@ -133,7 +133,7 @@ function getSocialStatus(type: number) {
   if (unbindingType.value === type) {
     return '解绑中'
   }
-  return getBindSocialUser(type) ? '已绑定' : '未绑定'
+  return getBindSocialUser(type) ? '已绑定' : '未开发'
 }
 
 /** 加载当前用户的三方绑定 */

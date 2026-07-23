@@ -22,12 +22,10 @@ import { isDoubleTokenRes, isSingleTokenRes } from '@/api/types/login'
 import { isDoubleTokenMode } from '@/utils'
 import { useDictStore } from './dict'
 import { useUserStore } from './user'
-import { getNotice, listNoticeTop } from '@/api/system/notice'
-import type { SysNotice } from '@/api/system/notice'
 import { businessApi } from '@/api/business'
 import type { AppLatestVersionVo } from '@/api/business'
 // 导入统一版本工具
-import { compareVersion, getLocalAppVersion } from '@/utils/app'
+import { getLocalAppVersion } from '@/utils/app'
 
 const tokenInfoState = isDoubleTokenMode
   ? {
@@ -40,7 +38,7 @@ const tokenInfoState = isDoubleTokenMode
       expiresIn: 0,
     }
 
-let noticeLoading = false
+let appUpdateChecking = false
 // 缓存已跳过的版本，非强制更新不再重复弹窗
 const skipForceUpdateVersion = ref('')
 
@@ -84,76 +82,57 @@ export const useTokenStore = defineStore(
       return false
     })
 
-    async function loadAppUnreadNotice() {
-      if (noticeLoading)
+    async function checkAppUpdate() {
+      if (appUpdateChecking)
         return
-      noticeLoading = true
+      appUpdateChecking = true
       try {
-        const topRes = await listNoticeTop()
-        const allTopList: SysNotice[] = topRes || []
-        const unreadList = allTopList.filter(item => item.noticeType === '2' && item.isRead === false)
-        for (let i = 0; i < unreadList.length; i++) {
-          const fullDetail = await getNotice(unreadList[i].noticeId!)
-          unreadList[i] = fullDetail
+        const localVer = getLocalAppVersion()
+        const systemInfo = uni.getSystemInfoSync() as any
+        if (systemInfo.uniPlatform !== 'app') {
+          return
         }
 
-        let needUpdate = false
-        let latestVersion = ''
-        let downloadUrl = ''
-        let forceUpdate = false
-        const localVer = getLocalAppVersion()
-        let versionRes: AppLatestVersionVo
-
-        // APP环境：请求后端真实版本接口，补齐必填参数
-        // #ifdef APP-PLUS
-        versionRes = await businessApi.getLatestAppVersion({
-          platform: 'android',
+        const platform = systemInfo.platform === 'ios' ? 'ios' : 'android'
+        const versionRes: AppLatestVersionVo = await businessApi.getLatestAppVersion({
+          platform,
           currentVersionCode: localVer.versionCode,
           // 下面两个根据你业务按需开启
           // tenantId: 租户ID,
           // appName: "外呼调度APP"
         })
-        // #endif
 
-        // H5本地调试：内置模拟新版本，无需启动后端即可测试更新弹窗
-        // #ifdef H5
-        versionRes = {
-          versionName: '2.1.0',
-          versionCode: 210,
-          apkDownloadUrl: 'https://demo-apk.test.com/app-v2.1.0.apk',
-          forceUpdate: true,
+        const latestVersion = versionRes.versionName
+        const needUpdate = localVer.versionName !== versionRes.versionName
+          || localVer.versionCode !== versionRes.versionCode
+        if (!needUpdate) {
+          return
         }
-        // #endif
-
-        latestVersion = versionRes.versionName
-        downloadUrl = versionRes.apkDownloadUrl ?? ''
-        forceUpdate = versionRes.forceUpdate
-
-        // 双维度比对版本
-        const diff = compareVersion(localVer.versionName, localVer.versionCode, versionRes.versionName, versionRes.versionCode)
-        needUpdate = diff < 0
-
-        // 非强制更新，用户点击稍后则缓存版本不再弹窗
-        if (needUpdate && !forceUpdate && skipForceUpdateVersion.value === latestVersion) {
-          needUpdate = false
+        if (!versionRes.forceUpdate && skipForceUpdateVersion.value === latestVersion) {
+          return
+        }
+        if (!versionRes.apkDownloadUrl) {
+          console.warn('检测到新版本，但缺少 APP 下载地址', versionRes)
+          return
         }
 
-        console.log('未读公告数量', unreadList.length, '是否需要更新', needUpdate)
-        if (unreadList.length > 0 || needUpdate) {
-          setTimeout(() => {
-            uni.$emit('app:openUnreadNoticePopup', {
-              noticeList: unreadList,
-              needUpdate,
-              latestVersion,
-              downloadUrl,
-              forceUpdate,
-            })
-          }, 300)
-        }
+        setTimeout(() => {
+          uni.$emit('app:openUpdatePopup', {
+            latestVersion,
+            localVersion: localVer.versionName,
+            updateTitle: versionRes.updateTitle || '发现新版本',
+            updateContent: versionRes.updateContent || '请更新到最新版本后继续使用',
+            downloadUrl: versionRes.apkDownloadUrl,
+            forceUpdate: versionRes.forceUpdate,
+            onSkip: () => {
+              skipForceUpdateVersion.value = latestVersion
+            },
+          })
+        }, 300)
       } catch (e) {
-        console.error('公告/版本加载异常', e)
+        console.error('APP 版本检查异常', e)
       } finally {
-        noticeLoading = false
+        appUpdateChecking = false
       }
     }
 
@@ -163,7 +142,7 @@ export const useTokenStore = defineStore(
       await userStore.fetchUserInfo()
       const dictStore = useDictStore()
       void dictStore.loadDictCacheWithRetry()
-      await loadAppUnreadNotice()
+      await checkAppUpdate()
     }
 
     const login = async (loginForm: ILoginForm) => {
@@ -296,6 +275,7 @@ export const useTokenStore = defineStore(
       tokenInfo,
       setTokenInfo,
       updateNowTime,
+      checkAppUpdate,
       skipForceUpdateVersion,
     }
   },

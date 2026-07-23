@@ -12,12 +12,17 @@ export function getLocalAppVersion() {
 
   // APP模拟器/真机，读取打包manifest真实版本
   // #ifdef APP-PLUS
-  const info = uni.getAppInfo()
+  const info = (uni as any).getAppInfo?.() || {}
   return {
     versionName: info.versionName || '1.0.0',
     versionCode: Number(info.versionCode) || 100,
   }
   // #endif
+
+  return {
+    versionName: '1.0.0',
+    versionCode: 100,
+  }
 }
 
 /**

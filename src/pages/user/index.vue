@@ -30,7 +30,7 @@
               {{ userInfo.nickname || userInfo.username || '未命名用户' }}
             </view>
             <view class="profile-meta">
-              {{ deptName }}
+              {{ profileMeta }}
             </view>
           </view>
           <view class="profile-action">
@@ -177,10 +177,11 @@
 <script lang="ts" setup>
 import type { TenantVO } from '@/api/login'
 import type { UserProfileVO } from '@/api/system/user/profile'
+import { onShow } from '@dcloudio/uni-app'
 import { useDialog } from '@wot-ui/ui/components/wd-dialog'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getUserProfile } from '@/api/system/user/profile'
 import { useAccess } from '@/hooks/useAccess'
 import { LOGIN_PAGE } from '@/router/config'
@@ -201,13 +202,20 @@ const dictStore = useDictStore()
 const toast = useToast()
 const dialog = useDialog()
 const { hasAccessByCodes } = useAccess()
-const { userInfo } = storeToRefs(userStore)
+const { userInfo, roles } = storeToRefs(userStore)
 const userProfile = ref<UserProfileVO | null>(null)
 const tenantEnabled = computed(() => import.meta.env.VITE_APP_TENANT_ENABLE === 'true')
 
-const deptName = computed(() => userProfile.value?.dept?.name || '暂无部门')
-const roleCount = computed(() => userProfile.value?.roles?.length || 0)
+const profileRoles = computed(() => userProfile.value?.roles?.map(role => role.name).filter(Boolean) || [])
+const roleNames = computed(() => {
+  if (profileRoles.value.length) {
+    return profileRoles.value.join('、')
+  }
+  return roles.value.length ? roles.value.join('、') : '暂无角色'
+})
+const roleCount = computed(() => userProfile.value?.roles?.length || roles.value.length)
 const postCount = computed(() => userProfile.value?.posts?.length || 0)
+const profileMeta = computed(() => `角色：${roleNames.value}`)
 
 const quickActions = [
   { title: '资料', icon: 'user', color: '#2f7dff', tint: '#eff6ff', action: handleGoProfile },
@@ -222,16 +230,18 @@ const accountMenus = [
 ]
 
 const supportMenus = [
-  { title: '常见问题', desc: '查看操作说明和问题解答', icon: 'exclamation-circle', color: '#d97706', tint: '#fff7ed', action: handleGoFaq },
   { title: '意见反馈', desc: '提交建议或问题反馈', icon: 'edit', color: '#7c3aed', tint: '#f5f3ff', action: handleGoFeedback },
   { title: '联系客服', desc: '二维码、电话和服务时间', icon: 'phone', color: '#0891b2', tint: '#ecfeff', action: handleGoContact },
   { title: '应用设置', desc: '协议、隐私和本地设置', icon: 'settings', color: '#2f7dff', tint: '#eff6ff', action: handleGoSettings },
 ]
 
-onMounted(async () => {
-  userProfile.value = await getUserProfile()
-  await userStore.fetchUserInfo()
+onShow(() => {
+  void loadUserProfile()
 })
+
+async function loadUserProfile() {
+  userProfile.value = await getUserProfile()
+}
 
 function handleGoProfile() {
   uni.navigateTo({ url: '/pages-core/user/profile/index' })
@@ -239,10 +249,6 @@ function handleGoProfile() {
 
 function handleGoSecurity() {
   uni.navigateTo({ url: '/pages-core/user/security/index' })
-}
-
-function handleGoFaq() {
-  uni.navigateTo({ url: '/pages-core/user/faq/index' })
 }
 
 function handleGoFeedback() {

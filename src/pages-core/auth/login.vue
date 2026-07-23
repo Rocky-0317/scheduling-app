@@ -111,17 +111,15 @@
 <script lang="ts" setup>
 import type { SocialLoginBindingContext } from '@/utils/social-login'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useTokenStore } from '@/store/token'
 import { ensureDecodeURIComponent, redirectAfterLogin } from '@/utils'
+import { takeSocialLoginContext } from '@/utils/social-login'
 import TenantPicker from './components/tenant-picker.vue'
 import Verify from './components/verifition/verify.vue'
 
 defineOptions({
   name: 'LoginPage',
-  style: {
-    navigationStyle: 'custom',
-  },
 })
 
 const pageProps = defineProps<{
@@ -142,8 +140,8 @@ const redirectUrl = ref(pageProps.redirect ? ensureDecodeURIComponent(pageProps.
 const tenantPickerRef = ref<InstanceType<typeof TenantPicker>>()
 const captchaEnabled = import.meta.env.VITE_APP_CAPTCHA_ENABLE === 'true'
 const ruoyiAuthMode = true
-const verifyRef = ref()
-const captchaType = ref('blockPuzzle')
+const verifyRef = ref<{ show: () => void }>()
+const captchaType = ref<'blockPuzzle' | 'clickWord'>('blockPuzzle')
 
 const formData = reactive({
   username: import.meta.env.VITE_APP_DEFAULT_LOGIN_USERNAME || '',
@@ -171,11 +169,21 @@ const socialAuth = computed(() => {
     : undefined
 })
 
+onMounted(() => {
+  if (pageProps.socialBind) {
+    const context = takeSocialLoginContext()
+    if (context?.stage === 'binding') {
+      socialBindingContext.value = context
+      redirectUrl.value = context.redirect || redirectUrl.value
+    }
+  }
+})
+
 async function getCode() {
   if (!captchaEnabled) {
     await verifySuccess({})
   } else {
-    verifyRef.value.show()
+    verifyRef.value?.show()
   }
 }
 
@@ -197,11 +205,11 @@ async function handleLogin() {
   await getCode()
 }
 
-async function verifySuccess(params: any) {
+async function verifySuccess(params: { captchaVerification?: string }) {
   loading.value = true
   try {
     const tokenStore = useTokenStore()
-    formData.captchaVerification = params.captchaVerification
+    formData.captchaVerification = params.captchaVerification || ''
     await tokenStore.login({
       type: 'username',
       ...formData,

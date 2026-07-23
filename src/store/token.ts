@@ -18,8 +18,18 @@ import {
   register,
   smsLogin,
 } from '@/api/login'
-import { isDoubleTokenRes, isSingleTokenRes } from '@/api/types/login'
+import { isDoubleTokenRes } from '@/api/types/login'
 import { isDoubleTokenMode } from '@/utils'
+import {
+  ACCESS_TOKEN_REFRESH_THRESHOLD,
+  clearAccessTokenExpireTime,
+  getAccessTokenExpireTime,
+  getAccessTokenFromTokenInfo,
+  hasTokenInfo,
+  isAccessTokenExpired,
+  saveAccessTokenExpireTime,
+  willAccessTokenExpireSoon,
+} from '@/utils/auth'
 import { useDictStore } from './dict'
 import { useUserStore } from './user'
 import { businessApi } from '@/api/business'
@@ -39,6 +49,7 @@ const tokenInfoState = isDoubleTokenMode
     }
 
 let appUpdateChecking = false
+let refreshTokenPromise: Promise<IAuthLoginRes> | null = null
 // 缓存已跳过的版本，非强制更新不再重复弹窗
 const skipForceUpdateVersion = ref('')
 
@@ -57,23 +68,14 @@ export const useTokenStore = defineStore(
     const setTokenInfo = (val: IAuthLoginRes) => {
       updateNowTime()
       tokenInfo.value = val
-      const now = Date.now()
-      if (isSingleTokenRes(val)) {
-        const expireTime = now + val.expiresIn * 1000
-        uni.setStorageSync('accessTokenExpireTime', expireTime)
-      } else if (isDoubleTokenRes(val)) {
-        uni.setStorageSync('accessTokenExpireTime', val.expiresTime)
-      }
+      // 登录或刷新成功后统一保存 access token 过期时间，路由和请求都基于它做本地鉴权。
+      saveAccessTokenExpireTime(val)
     }
 
     const isTokenExpired = computed(() => {
-      if (!tokenInfo.value)
+      if (!hasTokenInfo(tokenInfo.value))
         return true
-      const now = nowTime.value
-      const expireTime = uni.getStorageSync('accessTokenExpireTime')
-      if (!expireTime)
-        return true
-      return now >= expireTime
+      return isAccessTokenExpired(nowTime.value)
     })
 
     const isRefreshTokenExpired = computed(() => {
@@ -182,27 +184,38 @@ export const useTokenStore = defineStore(
       return res
     }
 
-    const logout = async () => {
+    function clearLocalLoginState() {
+      updateNowTime()
+      clearAccessTokenExpireTime()
+      refreshTokenPromise = null
+      tokenInfo.value = { ...tokenInfoState }
+      uni.removeStorageSync('token')
+      uni.$emit('auth:logout')
+      const userStore = useUserStore()
+      userStore.clearUserInfo()
+      const dictStore = useDictStore()
+      dictStore.clearDictCache()
+    }
+
+    const logout = async (options: { skipRequest?: boolean } = {}) => {
       try {
-        await _logout()
+        if (!options.skipRequest) {
+          await _logout()
+        }
       }
       catch (error) {
         console.error('退出登录失败:', error)
       }
       finally {
-        updateNowTime()
-        uni.removeStorageSync('accessTokenExpireTime')
-        tokenInfo.value = { ...tokenInfoState }
-        uni.removeStorageSync('token')
-        uni.$emit('auth:logout')
-        const userStore = useUserStore()
-        userStore.clearUserInfo()
-        const dictStore = useDictStore()
-        dictStore.clearDictCache()
+        clearLocalLoginState()
       }
     }
 
     const refreshToken = async () => {
+      // One refresh request is shared by all concurrent callers.
+      if (refreshTokenPromise) {
+        return refreshTokenPromise
+      }
       if (!isDoubleTokenMode) {
         console.error('单token模式不支持刷新token')
         throw new Error('单token模式不支持刷新token')
@@ -211,14 +224,18 @@ export const useTokenStore = defineStore(
         if (!isDoubleTokenRes(tokenInfo.value) || !tokenInfo.value.refreshToken) {
           throw new Error('无效的refreshToken')
         }
-        const res = await _refreshToken(tokenInfo.value.refreshToken)
-        setTokenInfo(res)
-        return res
+        refreshTokenPromise = _refreshToken(tokenInfo.value.refreshToken)
+          .then((res) => {
+            setTokenInfo(res)
+            return res
+          })
+        return await refreshTokenPromise
       }
       catch (error) {
         console.error('刷新token失败:', error)
         throw error
       } finally {
+        refreshTokenPromise = null
         updateNowTime()
       }
     }
@@ -226,27 +243,14 @@ export const useTokenStore = defineStore(
     const getValidToken = computed(() => {
       if (isTokenExpired.value)
         return ''
-      if (!isDoubleTokenMode) {
-        return isSingleTokenRes(tokenInfo.value) ? tokenInfo.value.token : ''
-      } else {
-        return isDoubleTokenRes(tokenInfo.value) ? tokenInfo.value.accessToken : ''
-      }
+      return getAccessTokenFromTokenInfo(tokenInfo.value)
     })
 
     const hasLoginInfo = computed(() => {
-      if (!tokenInfo.value)
-        return false
-      if (isDoubleTokenMode) {
-        return (isDoubleTokenRes(tokenInfo.value) && !!tokenInfo.value.accessToken)
-          || (isSingleTokenRes(tokenInfo.value) && !!tokenInfo.value.token)
-      } else {
-        return isSingleTokenRes(tokenInfo.value) && !!tokenInfo.value.token
-      }
+      return hasTokenInfo(tokenInfo.value)
     })
 
     const hasValidLogin = computed(() => {
-      if (isDoubleTokenMode)
-        return hasLoginInfo.value
       return hasLoginInfo.value && !isTokenExpired.value
     })
 
@@ -264,17 +268,41 @@ export const useTokenStore = defineStore(
       return getValidToken.value
     }
 
+    const ensureAccessToken = async (threshold = ACCESS_TOKEN_REFRESH_THRESHOLD): Promise<string> => {
+      updateNowTime()
+      if (!hasLoginInfo.value) {
+        return ''
+      }
+      if (!isDoubleTokenMode) {
+        return isTokenExpired.value ? '' : getValidToken.value
+      }
+      // Refresh before sending requests when access token has expired or will expire soon.
+      if (isTokenExpired.value || willAccessTokenExpireSoon(threshold, nowTime.value)) {
+        try {
+          await refreshToken()
+        } catch (error) {
+          console.error('涓诲姩鍒锋柊token澶辫触:', error)
+          return ''
+        }
+      }
+      updateNowTime()
+      return getValidToken.value
+    }
+
     return {
       login,
       socialLogin,
       logout,
+      clearLocalLoginState,
       hasLogin: hasValidLogin,
       refreshToken,
+      ensureAccessToken,
       tryGetValidToken,
       validToken: getValidToken,
       tokenInfo,
       setTokenInfo,
       updateNowTime,
+      accessTokenExpireTime: getAccessTokenExpireTime,
       checkAppUpdate,
       skipForceUpdateVersion,
     }

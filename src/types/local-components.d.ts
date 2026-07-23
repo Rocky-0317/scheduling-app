@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AuthPageLoading: typeof import('./../components/auth-page-loading/auth-page-loading.vue')['default']
     DeptFormPicker: typeof import('./../components/system-select/dept-form-picker.vue')['default']
     DeptSearchPicker: typeof import('./../components/system-select/dept-search-picker.vue')['default']
     DictTag: typeof import('./../components/dict-tag/dict-tag.vue')['default']

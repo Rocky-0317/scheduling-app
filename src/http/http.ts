@@ -3,6 +3,7 @@ import type { CustomRequestOptions, IResponse } from '@/http/types'
 import { nextTick } from 'vue'
 import { useTokenStore } from '@/store/token'
 import { getLastPage, isDoubleTokenMode } from '@/utils'
+import { ACCESS_TOKEN_REFRESH_THRESHOLD, hasTokenInfo } from '@/utils/auth'
 import { ApiEncrypt } from '@/utils/encrypt'
 import { toLoginPage } from '@/utils/toLoginPage'
 import { ResultEnum } from './tools/enum'
@@ -53,7 +54,7 @@ async function handleLoginExpired(tokenStore: ReturnType<typeof useTokenStore>) 
     icon: 'none',
   })
   // 清除用户信息
-  await tokenStore.logout()
+  await tokenStore.logout({ skipRequest: true })
   // 跳转到登录页
   setTimeout(() => {
     // 优化 by 芋艿：跳转登录页时，携带上次浏览的页面地址，登录成功后可以跳回去
@@ -65,11 +66,26 @@ async function handleLoginExpired(tokenStore: ReturnType<typeof useTokenStore>) 
     }
     toLoginPage({ queryString })
     loginExpiredHandling = false
-  }, 2000)
+  }, 300)
 }
 
-export function http<T>(options: CustomRequestOptions) {
+function isWhiteRequest(options: CustomRequestOptions) {
+  const url = options.url || ''
+  const isTokenDisabled = (options.header || {}).isToken === false
+  return isTokenDisabled || url.includes('/login') || url.includes('/refresh-token')
+}
+
+export async function http<T>(options: CustomRequestOptions) {
   // 1. 返回 Promise 对象
+  const tokenStore = useTokenStore()
+  // Check local token expiry before sending business requests.
+  if (!isWhiteRequest(options)) {
+    const token = await tokenStore.ensureAccessToken(ACCESS_TOKEN_REFRESH_THRESHOLD)
+    if (!token && hasTokenInfo(tokenStore.tokenInfo)) {
+      await handleLoginExpired(tokenStore)
+      throw new Error('Login expired')
+    }
+  }
   return new Promise<T>((resolve, reject) => {
     uni.request({
       ...options,

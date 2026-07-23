@@ -106,6 +106,36 @@
 
       <view class="bottom-space" />
     </scroll-view>
+
+    <!-- APP更新弹窗 -->
+    <view v-if="popupOpen" class="mask-layer">
+      <view class="update-modal">
+        <view class="modal-header">
+          <text class="modal-subtitle">APP 更新</text>
+          <view class="modal-title">
+            {{ updateTitle }}
+          </view>
+          <view class="version-info">
+            <text v-if="localVersion">当前版本 v{{ localVersion }}</text>
+            <text v-if="latestVersion">最新版本 v{{ latestVersion }}</text>
+          </view>
+        </view>
+        <view class="modal-content">
+          {{ updateContent }}
+        </view>
+        <view class="modal-footer">
+          <text v-if="forceUpdate" class="force-tip">当前版本不可继续使用，请更新 APP</text>
+          <view class="btn-group">
+            <button v-if="!forceUpdate" class="btn-cancel" @click="closePopup">
+              稍后再说
+            </button>
+            <button class="btn-primary" @click="handleUpdate">
+              立即更新
+            </button>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -114,6 +144,8 @@ import type { OutboundWorkbenchSummary } from '@/api/business'
 import { storeToRefs } from 'pinia'
 import { businessApi } from '@/api/business'
 import { useUserStore } from '@/store'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 
 defineOptions({
   name: 'Home',
@@ -203,6 +235,77 @@ function goModule(module: string) {
 function goTab(url: string) {
   uni.switchTab({ url })
 }
+
+// ====================== 版本更新弹窗【修复：标准全局事件监听，移除轮询】 ======================
+interface UpdatePopupParams {
+  latestVersion?: string
+  localVersion?: string
+  updateTitle?: string
+  updateContent?: string
+  downloadUrl?: string
+  forceUpdate?: boolean
+  onSkip?: () => void
+}
+const popupOpen = ref(false)
+const latestVersion = ref('')
+const localVersion = ref('')
+const updateTitle = ref('发现新版本')
+const updateContent = ref('请更新到最新版本后继续使用')
+const downloadUrl = ref('')
+const forceUpdate = ref(false)
+let skipUpdateHandler: (() => void) | undefined
+
+// 统一事件回调函数（必须单独抽离，卸载时精准清除监听）
+function handleUpdatePopupEvent(data: UpdatePopupParams) {
+  console.log('监听到版本更新事件', data)
+  latestVersion.value = data.latestVersion || ''
+  localVersion.value = data.localVersion || ''
+  updateTitle.value = data.updateTitle || '发现新版本'
+  updateContent.value = data.updateContent || '请更新到最新版本后继续使用'
+  downloadUrl.value = data.downloadUrl || ''
+  forceUpdate.value = Boolean(data.forceUpdate)
+  skipUpdateHandler = data.onSkip
+  popupOpen.value = true
+}
+
+function closePopup() {
+  if (forceUpdate.value)
+    return
+  skipUpdateHandler?.()
+  popupOpen.value = false
+}
+
+function handleUpdate() {
+  if (!downloadUrl.value) {
+    uni.showToast({ title: '暂无下载地址', icon: 'none' })
+    return
+  }
+  // #ifdef APP-PLUS
+  plus.downloader.createDownload(downloadUrl.value, {
+    filename: '_scheduling_app.apk',
+  }, (res) => {
+    if (res.status === 200) {
+      plus.runtime.install(res.filename)
+    }
+  }).start()
+  // #endif
+
+  // #ifdef H5 || MP-WEIXIN
+  window.open(downloadUrl.value, '_blank')
+  // #endif
+}
+
+onMounted(() => {
+  // 注册全局更新弹窗事件监听
+  uni.$on('app:openUpdatePopup', handleUpdatePopupEvent)
+  loadSummary()
+})
+
+onUnmounted(() => {
+  // 精准移除当前页面的事件监听，不影响全局其他页面
+  uni.$off('app:openUpdatePopup', handleUpdatePopupEvent)
+})
+// =================================================================
 
 onShow(() => {
   loadSummary()
@@ -540,5 +643,86 @@ onShow(() => {
 
 .bottom-space {
   height: 56rpx;
+}
+
+/* 弹窗样式 */
+.mask-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.update-modal {
+  width: 620rpx;
+  padding: 36rpx 32rpx 32rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+}
+.modal-header {
+  padding-bottom: 22rpx;
+  border-bottom: 1rpx solid #edf2f8;
+}
+.modal-subtitle {
+  color: #2f7dff;
+  font-size: 25rpx;
+  font-weight: bold;
+}
+.modal-title {
+  margin-top: 12rpx;
+  color: #172033;
+  font-size: 38rpx;
+  font-weight: bold;
+  line-height: 1.35;
+}
+.version-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 14rpx;
+  color: #7a8799;
+  font-size: 24rpx;
+}
+.modal-content {
+  min-height: 150rpx;
+  padding: 28rpx 0;
+  color: #344054;
+  font-size: 28rpx;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+.force-tip {
+  display: block;
+  margin-bottom: 18rpx;
+  color: #f56c6c;
+  font-size: 24rpx;
+  text-align: center;
+}
+.btn-group {
+  display: flex;
+  width: 100%;
+  gap: 20rpx;
+}
+.btn-cancel,
+.btn-primary {
+  flex: 1;
+  height: 88rpx;
+  border: none;
+  border-radius: 12rpx;
+  font-size: 30rpx;
+  line-height: 88rpx;
+}
+.btn-cancel {
+  color: #667085;
+  background: #f2f4f7;
+}
+.btn-primary {
+  color: #fff;
+  background: #2f7dff;
 }
 </style>

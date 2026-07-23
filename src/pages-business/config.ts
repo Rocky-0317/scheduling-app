@@ -1,3 +1,4 @@
+// ========== 所有import统一放在文件顶层，消除位置错误、重复导入红线 ==========
 import { businessApi } from '@/api/business'
 
 export type BusinessModuleKey
@@ -15,11 +16,11 @@ export interface BusinessField {
   key: string
   label: string
   type?: 'text' | 'number' | 'textarea' | 'radio' | 'date' | 'picker' | 'multiPicker'
-  source?: 'role' | 'businessType' | 'grid'
   required?: boolean
   readonly?: boolean
   hiddenOnCreate?: boolean
   options?: Array<{ label: string, value: string | number }>
+  source?: 'role' | 'businessType' | 'grid'
 }
 
 export interface BusinessModuleConfig {
@@ -89,7 +90,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     searchFields: [
       { key: 'customerNumber', label: '客户号码' },
       { key: 'packageName', label: '套餐' },
-      { key: 'grid', label: '网格' },
+      { key: 'grid', label: '网格', type: 'picker', source: 'grid' },
       { key: 'receiver', label: '接单人' },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', options: assignmentOptions },
       { key: 'isSuccess', label: '办理结果', type: 'radio', options: successOptions },
@@ -103,9 +104,10 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'grid', label: '网格', type: 'picker', source: 'grid', required: true },
       { key: 'deliveryAddress', label: '配送地址', type: 'textarea' },
       { key: 'receiver', label: '接单人', hiddenOnCreate: true, readonly: true },
+      { key: 'receiverName', label: '接单人', hiddenOnCreate: true, readonly: true },
       { key: 'orderTime', label: '接单时间', hiddenOnCreate: true, readonly: true },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', hiddenOnCreate: true, options: assignmentOptions, readonly: true },
-      { key: 'isSuccess', label: '办理结果', type: 'radio', hiddenOnCreate: true, options: successOptions },
+      { key: 'isSuccess', label: '办理结果', type: 'radio', hiddenOnCreate: true, options: successOptions, readonly: true },
       { key: 'cardNumber', label: '办理号卡', hiddenOnCreate: true },
       { key: 'followStatus', label: '跟进情况', type: 'textarea' },
       { key: 'remark', label: '备注', type: 'textarea' },
@@ -183,11 +185,9 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     searchFields: [
       { key: 'packageName', label: '套餐名称' },
       { key: 'packageCode', label: '套餐编码' },
-      { key: 'businessType', label: '业务类型' },
       { key: 'status', label: '状态', type: 'radio', options: enableOptions },
     ],
     formFields: [
-      { key: 'businessType', label: '业务类型' },
       { key: 'packageName', label: '套餐名称', required: true },
       { key: 'packageCode', label: '套餐编码', required: true },
       { key: 'price', label: '套餐价格', type: 'number', required: true },
@@ -208,7 +208,6 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'name', label: '客户姓名' },
       { key: 'phone', label: '联系电话' },
       { key: 'packageName', label: '套餐名称' },
-      { key: 'businessType', label: '业务类型' },
     ],
     formFields: [
       { key: 'storeUserName', label: '门店名称', readonly: true },
@@ -219,7 +218,6 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'district', label: '区县' },
       { key: 'address', label: '详细地址', type: 'textarea' },
       { key: 'packageName', label: '办理套餐', readonly: true },
-      { key: 'businessType', label: '业务类型', readonly: true },
       { key: 'remark', label: '备注', type: 'textarea' },
     ],
   },
@@ -243,8 +241,8 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'personName', label: '门店名称', readonly: true },
       { key: 'userName', label: '登录账号', readonly: true },
       { key: 'phone', label: '联系电话', readonly: true },
-      { key: 'businessType', label: '业务类型', readonly: true },
-      { key: 'grid', label: '覆盖网格', readonly: true },
+      { key: 'businessType', label: '业务类型', readonly: true, source: 'businessType' },
+      { key: 'grid', label: '覆盖网格', readonly: true, source: 'grid' },
       { key: 'status', label: '营业状态', type: 'radio', options: statusOptions, readonly: true },
       { key: 'remark', label: '备注', type: 'textarea', readonly: true },
     ],
@@ -267,8 +265,8 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'personName', label: '门店名称', readonly: true },
       { key: 'userName', label: '登录账号', readonly: true },
       { key: 'phone', label: '联系电话', readonly: true },
-      { key: 'businessType', label: '业务类型', readonly: true },
-      { key: 'grid', label: '覆盖网格', readonly: true },
+      { key: 'businessType', label: '业务类型', readonly: true, source: 'businessType' },
+      { key: 'grid', label: '覆盖网格', readonly: true, source: 'grid' },
       { key: 'status', label: '营业状态', type: 'radio', options: statusOptions, readonly: true },
       { key: 'remark', label: '备注', type: 'textarea', readonly: true },
     ],
@@ -285,8 +283,11 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     searchFields: [
       { key: 'customerNumber', label: '客户号码' },
       { key: 'packageName', label: '套餐' },
-      { key: 'grid', label: '网格' },
+      { key: 'grid', label: '网格', source: 'grid' },
       { key: 'receiver', label: '接单人' },
+      { key: 'receiverName', label: '接单人' },
+      { key: 'orderTime', label: '接单时间' },
+      { key: 'overdueDays', label: '已超时时长' },
     ],
     formFields: [],
   },
@@ -302,8 +303,10 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     searchFields: [
       { key: 'customerNumber', label: '客户号码' },
       { key: 'packageName', label: '套餐' },
-      { key: 'grid', label: '网格' },
+      { key: 'grid', label: '网格', source: 'grid' },
       { key: 'receiver', label: '接单人' },
+      { key: 'assignedPersonName', label: '接单人' },
+      { key: 'claimedTime', label: '接单时间' },
     ],
     formFields: [],
   },
@@ -366,35 +369,100 @@ export function getStatusType(key: string | undefined, value: any, options?: Arr
   return 'default'
 }
 
-/**
- * 根据source类型加载下拉选项
- * @param source role / businessType / grid
- */
-export async function loadSourceOptions(source: 'role' | 'businessType' | 'grid') {
-  switch (source) {
-    case 'businessType': {
-      const res = await businessApi.listBusinessTypeOptions()
-      // 字典转统一 {label,value} 格式
-      return res.map(item => ({
-        label: item.dictLabel || item.label,
-        value: item.dictValue || item.value,
-      }))
+export interface SelectOption {
+  label: string
+  value: string | number
+}
+
+// 全局缓存下拉选项，避免重复请求
+export const sourceOptionCache: Record<string, SelectOption[]> = {}
+
+export async function loadSourceOptions(source: 'role' | 'businessType' | 'grid'): Promise<SelectOption[]> {
+  // 命中缓存直接返回
+  if (sourceOptionCache[source])
+    return sourceOptionCache[source]
+  try {
+    let list: SelectOption[] = []
+    switch (source) {
+      case 'businessType': {
+        const res = await businessApi.listBusinessTypeOptions()
+        const dataList = Array.isArray(res) ? res : res.data ?? []
+        list = dataList.map(item => ({
+          label: item.dictLabel || item.label || '',
+          // 统一转字符串，避免数字/字符串类型不匹配
+          value: String(item.dictValue ?? item.value ?? ''),
+        })).filter(item => item.label && item.value)
+        break
+      }
+      case 'grid': {
+        const res = await businessApi.listActiveGridOptions()
+        const dataList = res.rows ?? []
+        // 对齐form页面逻辑：value使用网格名称，和后端存储字段一致
+        list = dataList.map(item => ({
+          label: item.gridName || '',
+          value: item.gridName || '',
+        })).filter(item => item.label && item.value)
+        break
+      }
+      case 'role': {
+        const res = await businessApi.listRoleOptions()
+        const dataList = res.rows ?? []
+        list = dataList.map(item => ({
+          label: item.roleName || '',
+          value: item.roleId,
+          roleKey: item.roleKey,
+        })).filter(item => item.label && item.value)
+        break
+      }
     }
-    case 'grid': {
-      const res = await businessApi.listActiveGridOptions()
-      return res.rows.map(item => ({
-        label: item.gridName,
-        value: item.id,
-      }))
-    }
-    case 'role': {
-      const res = await businessApi.listRoleOptions()
-      return res.rows.map(item => ({
-        label: item.roleName,
-        value: item.roleId,
-      }))
-    }
-    default:
-      return []
+    sourceOptionCache[source] = list
+    return list
+  } catch (err) {
+    console.error(`加载${source}下拉选项异常：`, err)
+    return []
   }
+}
+
+/**
+ * 异步翻译：适用于异步场景，自动加载缓存
+ */
+export async function getSourceLabel(
+  sourceType: 'role' | 'businessType' | 'grid',
+  value: string | number | string[] | number[] | null | undefined,
+): Promise<string> {
+  if (!value || (Array.isArray(value) && value.length === 0))
+    return '-'
+  const options = await loadSourceOptions(sourceType)
+  const codeArr = Array.isArray(value) ? value : [value]
+  return codeArr.map((code) => {
+    const match = options.find(d => String(d.value) === String(code))
+    return match?.label ?? String(code)
+  }).join('、')
+}
+
+/**
+ * 同步翻译：列表渲染用，依赖预加载的缓存数据，和form页面完全同源
+ */
+export function getSourceMultiLabel(
+  sourceType: 'role' | 'businessType' | 'grid',
+  value: string | string[] | number | number[] | null | undefined,
+): string {
+  if (!value || (Array.isArray(value) && value.length === 0))
+    return '-'
+
+  const cacheList = sourceOptionCache[sourceType] || []
+  const codeArr = Array.isArray(value) ? value : [String(value)]
+  return codeArr.map((code) => {
+    const match = cacheList.find(d => String(d.value) === String(code))
+    return match?.label ?? String(code)
+  }).join('、')
+}
+
+// 预加载所有下拉缓存
+export async function preloadAllSourceOptions() {
+  await Promise.all([
+    loadSourceOptions('businessType'),
+    loadSourceOptions('grid'),
+    loadSourceOptions('role'),
+  ])
 }

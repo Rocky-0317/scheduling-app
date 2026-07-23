@@ -91,9 +91,9 @@ export const useTokenStore = defineStore(
       try {
         const localVer = getLocalAppVersion()
         const systemInfo = uni.getSystemInfoSync() as any
-        if (systemInfo.uniPlatform !== 'app') {
-          return
-        }
+        // if (systemInfo.uniPlatform !== 'app') {
+        //   return
+        // }
 
         const platform = systemInfo.platform === 'ios' ? 'ios' : 'android'
         const versionRes: AppLatestVersionVo = await businessApi.getLatestAppVersion({
@@ -113,7 +113,7 @@ export const useTokenStore = defineStore(
         if (!versionRes.forceUpdate && skipForceUpdateVersion.value === latestVersion) {
           return
         }
-        if (!versionRes.apkDownloadUrl) {
+        if (!versionRes.downloadUrl) {
           console.warn('检测到新版本，但缺少 APP 下载地址', versionRes)
           return
         }
@@ -124,7 +124,7 @@ export const useTokenStore = defineStore(
             localVersion: localVer.versionName,
             updateTitle: versionRes.updateTitle || '发现新版本',
             updateContent: versionRes.updateContent || '请更新到最新版本后继续使用',
-            downloadUrl: versionRes.apkDownloadUrl,
+            downloadUrl: versionRes.downloadUrl,
             forceUpdate: versionRes.forceUpdate,
             onSkip: () => {
               skipForceUpdateVersion.value = latestVersion

@@ -100,7 +100,7 @@
                 <wd-icon :name="getFieldIcon(key)" size="28rpx" color="#7890ad" />
               </view>
               <text class="record-label">{{ getFieldLabel(key) }}</text>
-              <text class="record-text">{{ formatValue(item[key]) }}</text>
+              <text class="record-text">{{ formatValue(item[key], key) }}</text>
             </view>
           </view>
 
@@ -221,11 +221,18 @@
 </template>
 
 <script setup lang="ts">
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { computed, reactive, ref } from 'vue'
-import { getModuleConfig, getStatusLabel, getStatusType } from '@/pages-business/config'
+import {
+  getModuleConfig,
+  getSourceMultiLabel,
+  getStatusLabel,
+  getStatusType,
+  preloadAllSourceOptions,
+} from '@/pages-business/config'
 import { businessApi } from '@/api/business'
 import { getEnvBaseUrl, navigateBackPlus } from '@/utils'
+import type { BusinessModuleConfig } from '@/pages-business/config'
 
 const props = defineProps<{ module?: string }>()
 
@@ -237,7 +244,7 @@ definePage({
 })
 
 const toast = useToast()
-const config = computed(() => getModuleConfig(props.module))
+const config = computed<BusinessModuleConfig>(() => getModuleConfig(props.module))
 const list = ref<any[]>([])
 const pagingRef = ref<any>()
 const searchVisible = ref(false)
@@ -246,6 +253,7 @@ const queryParams = ref<Record<string, any>>({})
 const searchForm = reactive<Record<string, any>>({})
 const timeoutConfigVisible = ref(false)
 const timeoutSaving = ref(false)
+const sourceLoaded = ref(false)
 const timeoutConfig = reactive({
   status: 1,
   timeoutDays: 30,
@@ -253,7 +261,7 @@ const timeoutConfig = reactive({
 
 const canEdit = computed(() => !config.value.readonly && !!config.value.update)
 const isTimeoutModule = computed(() => config.value.key === 'timeoutReminder')
-const isModernModule = computed(() => true)
+const isModernModule = computed(() => ['outboundPersonnel', 'customerInfo', 'storeList', 'storeInfo'].includes(config.value.key))
 const isPackageModule = computed(() => config.value.key === 'bizPackage')
 const activeSearchCount = computed(() => Object.values(queryParams.value).filter(value => value !== undefined && value !== '').length)
 const quickSearchPlaceholder = computed(() => {
@@ -266,7 +274,7 @@ const quickSearchPlaceholder = computed(() => {
 const searchPlaceholder = computed(() => {
   const conditions = Object.entries(queryParams.value)
     .filter(([, value]) => value !== undefined && value !== '')
-    .map(([key, value]) => `${getFieldLabel(key)}:${formatValue(value)}`)
+    .map(([key, value]) => `${getFieldLabel(key)}:${formatValue(value, key)}`)
   return conditions.length ? conditions.join(' | ') : `搜索${config.value.title}`
 })
 
@@ -288,7 +296,9 @@ async function queryList(pageNum: number, pageSize: number) {
 }
 
 function reload() {
-  pagingRef.value?.reload()
+  nextTick(() => {
+    pagingRef.value?.reload()
+  })
 }
 
 function openSearch() {
@@ -418,6 +428,12 @@ function getFieldLabel(key: string) {
   return [...config.value.searchFields, ...config.value.formFields].find(item => item.key === key)?.label || key
 }
 
+function getFieldSource(fieldKey: string) {
+  const allFields = [...config.value.searchFields, ...config.value.formFields]
+  const target = allFields.find(f => f.key === fieldKey)
+  return target?.source
+}
+
 function getSecondaryKeys(item: Record<string, any>) {
   if (!isModernModule.value) {
     return config.value.secondaryKeys
@@ -500,13 +516,26 @@ function getQuickSearchKey(keyword: string) {
 }
 
 function getValue(item: Record<string, any>, key: string) {
-  return formatValue(item[key])
+  return formatValue(item[key], key)
 }
 
-function formatValue(value: any) {
-  if (Array.isArray(value)) {
-    return value.length ? value.join('、') : '-'
+// 核心：统一格式化，businessType和grid走完全相同的source翻译逻辑
+function formatValue(value: any, fieldKey?: string) {
+  const source = fieldKey ? getFieldSource(fieldKey) : undefined
+  const rawVal = value
+
+  // 带source配置的字段（businessType/grid/role），统一走接口缓存翻译，和form页面同源
+  if (source) {
+    return getSourceMultiLabel(source, rawVal)
   }
+
+  // 数组兜底拼接
+  if (Array.isArray(rawVal)) {
+    const arr = rawVal.filter(v => v !== null && v !== '')
+    return arr.length ? arr.join('、') : '-'
+  }
+
+  // 空值兜底
   if (value === undefined || value === null || value === '') {
     return '-'
   }
@@ -551,6 +580,25 @@ function previewImage(urls: string[], current: string) {
   const fullUrls = urls.map(getImageUrl)
   uni.previewImage({ urls: fullUrls, current: getImageUrl(current) })
 }
+
+// 数据源加载完成后刷新列表，保证显示中文
+watch(sourceLoaded, (val) => {
+  if (val)
+    reload()
+})
+
+onMounted(async () => {
+  try {
+    // 和form页面加载完全一致的接口数据：业务类型、网格、角色
+    await preloadAllSourceOptions()
+    sourceLoaded.value = true
+    // 数据加载完成再刷新列表，确保渲染时直接显示中文
+    reload()
+  } catch (err) {
+    console.error('初始化数据源失败', err)
+    sourceLoaded.value = true
+  }
+})
 </script>
 
 <style scoped lang="scss">
@@ -778,7 +826,7 @@ function previewImage(urls: string[], current: string) {
   flex: 1;
   color: #071d3a;
   font-size: 34rpx;
-  font-weight: 850;
+  font-weight: 800;
 }
 
 .person-account {
@@ -870,7 +918,7 @@ function previewImage(urls: string[], current: string) {
   background: #e8f8ee;
   color: #16a34a;
   font-size: 22rpx;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .person-card-actions {

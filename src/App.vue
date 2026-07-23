@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { onHide, onLaunch, onShow } from '@dcloudio/uni-app'
 import { onMounted, onUnmounted, ref } from 'vue'
-import { navigateToInterceptor } from '@/router/interceptor'
 import { useDictStore, useTokenStore } from '@/store'
-import { hasTokenInfo, isAccessTokenExpired } from '@/utils/auth'
 
 interface UpdatePopupParams {
   latestVersion?: string
@@ -15,7 +13,7 @@ interface UpdatePopupParams {
   onSkip?: () => void
 }
 
-const updateDialog = ref(false)
+const popupOpen = ref(false)
 const latestVersion = ref('')
 const localVersion = ref('')
 const updateTitle = ref('发现新版本')
@@ -26,34 +24,13 @@ let skipUpdateHandler: (() => void) | undefined
 
 function syncTabbarWhenPageVisible() {}
 
-function getAppShowUrl(options?: any) {
-  return options?.path ? `/${options.path}` : '/'
-}
-
-function runGlobalAuthGuard(options?: any) {
-  const tokenStore = useTokenStore().updateNowTime()
-  const url = getAppShowUrl(options)
-  // App 启动和切回前台时先做本地过期校验，过期 token 不再放行业务页面首屏。
-  if (hasTokenInfo(tokenStore.tokenInfo) && isAccessTokenExpired()) {
-    uni.showLoading({
-      title: '登录状态校验中',
-      mask: true,
-    })
-    tokenStore.clearLocalLoginState()
-    setTimeout(() => {
-      uni.hideLoading()
-      navigateToInterceptor.invoke({ url, query: options?.query })
-    }, 0)
-    return false
-  }
-  navigateToInterceptor.invoke({ url, query: options?.query })
-  return true
-}
-
 onLaunch((options) => {
-  runGlobalAuthGuard(options)
   console.log('App初始化', options)
+})
+
+onMounted(() => {
   uni.$on('app:openUpdatePopup', (params: UpdatePopupParams = {}) => {
+    console.log('✅ 成功接收更新弹窗事件', params)
     latestVersion.value = params.latestVersion || ''
     localVersion.value = params.localVersion || ''
     updateTitle.value = params.updateTitle || '发现新版本'
@@ -61,11 +38,12 @@ onLaunch((options) => {
     downloadUrl.value = params.downloadUrl || ''
     forceUpdate.value = Boolean(params.forceUpdate)
     skipUpdateHandler = params.onSkip
-    updateDialog.value = true
+    setTimeout(() => {
+      popupOpen.value = true
+      console.log('弹窗开关已置为true', popupOpen.value)
+    }, 100)
   })
-})
 
-onMounted(() => {
   // #ifdef H5
   document.addEventListener('visibilitychange', syncTabbarWhenPageVisible)
   window.addEventListener('pageshow', syncTabbarWhenPageVisible)
@@ -80,12 +58,11 @@ onUnmounted(() => {
   // #endif
 })
 
-function closeUpdatePopup() {
-  if (forceUpdate.value) {
+function closePopup() {
+  if (forceUpdate.value)
     return
-  }
   skipUpdateHandler?.()
-  updateDialog.value = false
+  popupOpen.value = false
 }
 
 function handleUpdate() {
@@ -102,15 +79,11 @@ onShow((options) => {
   console.log('App.vue onShow', options)
   const tokenStore = useTokenStore()
   const dictStore = useDictStore()
-  const passedAuthGuard = runGlobalAuthGuard(options)
-  if (!passedAuthGuard) {
-    return
-  }
-  if (tokenStore.updateNowTime().hasLogin) {
+  if (tokenStore.hasLogin) {
     if (!dictStore.isLoaded) {
-      void dictStore.loadDictCacheWithRetry()
+      dictStore.loadDictCache()
     }
-    void tokenStore.checkAppUpdate()
+    tokenStore.checkAppUpdate()
   }
 })
 
@@ -120,73 +93,75 @@ onHide(() => {
 </script>
 
 <template>
-  <uni-popup
-    v-model="updateDialog"
-    type="center"
-    :mask-close="false"
-    style="z-index: 9999999 !important;"
-  >
-    <view class="update-wrap">
-      <view class="update-header">
-        <view class="update-label">
-          APP 更新
-        </view>
-        <view class="update-title">
+  <!-- 纯原生遮罩弹窗，无uni-ui依赖 -->
+  <view v-if="popupOpen" class="mask-layer">
+    <view class="update-modal">
+      <view class="modal-header">
+        <text class="modal-subtitle">APP 更新</text>
+        <view class="modal-title">
           {{ updateTitle }}
         </view>
-        <view class="update-version">
+        <view class="version-info">
           <text v-if="localVersion">当前版本 v{{ localVersion }}</text>
           <text v-if="latestVersion">最新版本 v{{ latestVersion }}</text>
         </view>
       </view>
 
-      <view class="update-content">
+      <view class="modal-content">
         {{ updateContent }}
       </view>
 
-      <view class="update-footer">
+      <view class="modal-footer">
         <text v-if="forceUpdate" class="force-tip">当前版本不可继续使用，请更新 APP</text>
-        <view class="btn-row">
-          <button v-if="!forceUpdate" class="btn-cancel" @click="closeUpdatePopup">
+        <view class="btn-group">
+          <button v-if="!forceUpdate" class="btn-cancel" @click="closePopup">
             稍后再说
           </button>
-          <button class="btn-update" @click="handleUpdate">
+          <button class="btn-primary" @click="handleUpdate">
             立即更新
           </button>
         </view>
       </view>
     </view>
-  </uni-popup>
+  </view>
 </template>
 
 <style lang="scss">
-.update-wrap {
+.mask-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.update-modal {
   width: 620rpx;
   padding: 36rpx 32rpx 32rpx;
   border-radius: 18rpx;
-  background: #fff;
+  background: #ffffff;
 }
-
-.update-header {
+.modal-header {
   padding-bottom: 22rpx;
   border-bottom: 1rpx solid #edf2f8;
 }
-
-.update-label {
+.modal-subtitle {
   color: #2f7dff;
   font-size: 25rpx;
-  font-weight: 700;
+  font-weight: bold;
 }
-
-.update-title {
+.modal-title {
   margin-top: 12rpx;
   color: #172033;
   font-size: 38rpx;
-  font-weight: 800;
+  font-weight: bold;
   line-height: 1.35;
 }
-
-.update-version {
+.version-info {
   display: flex;
   flex-wrap: wrap;
   gap: 14rpx;
@@ -194,8 +169,7 @@ onHide(() => {
   color: #7a8799;
   font-size: 24rpx;
 }
-
-.update-content {
+.modal-content {
   min-height: 150rpx;
   padding: 28rpx 0;
   color: #344054;
@@ -203,7 +177,6 @@ onHide(() => {
   line-height: 1.7;
   white-space: pre-wrap;
 }
-
 .force-tip {
   display: block;
   margin-bottom: 18rpx;
@@ -211,15 +184,13 @@ onHide(() => {
   font-size: 24rpx;
   text-align: center;
 }
-
-.btn-row {
+.btn-group {
   display: flex;
   width: 100%;
   gap: 20rpx;
 }
-
 .btn-cancel,
-.btn-update {
+.btn-primary {
   flex: 1;
   height: 88rpx;
   border: none;
@@ -227,13 +198,11 @@ onHide(() => {
   font-size: 30rpx;
   line-height: 88rpx;
 }
-
 .btn-cancel {
   color: #667085;
   background: #f2f4f7;
 }
-
-.btn-update {
+.btn-primary {
   color: #fff;
   background: #2f7dff;
 }

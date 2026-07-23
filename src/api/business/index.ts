@@ -165,7 +165,7 @@ export interface AppLatestVersionVo {
   updateTitle: string
   updateContent: string
   forceUpdate: boolean
-  apkDownloadUrl?: string
+  downloadUrl?: string
   apkFileName?: string
   apkFileSize?: number
   releaseTime?: string
@@ -262,8 +262,20 @@ export const businessApi = {
   listBusinessTypeOptions() {
     return http.get<BusinessDictData[]>('/system/dict/data/type/business_type')
   },
+
   listStore(params: Record<string, any>) {
-    return listByRuoyi<OutboundPersonnel>('/business/outboundPersonnel/store/list', params)
+    return http.get<{ code: number, msg: string, data: OutboundPersonnel[] }>('/business/outboundPersonnel/store/list', params)
+      .then((res) => {
+        // 统一转成框架标准分页结构，解决读取rows为空问题
+        return {
+          rows: res.data || [],
+          total: res.data?.length || 0,
+        } as RuoYiPageResult<OutboundPersonnel>
+      })
+  },
+  // 新增门店详情接口，和人员详情接口复用路径，统一读取门店完整数据
+  getStoreDetail(id: number) {
+    return http.get<OutboundPersonnel>(`/business/outboundPersonnel/${id}`)
   },
   getOutboundPersonnel(id: number) {
     return http.get<OutboundPersonnel>(`/business/outboundPersonnel/${id}`)

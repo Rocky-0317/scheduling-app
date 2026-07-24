@@ -46,6 +46,38 @@ function YudaoUiResolver(): ComponentResolver {
   }
 }
 
+function appRuntimePolyfillPlugin() {
+  const marker = '/* app-runtime-polyfills */'
+  const polyfills = `${marker}
+if (typeof globalThis.DOMException === 'undefined') {
+  globalThis.DOMException = class DOMException extends Error {
+    constructor(message, name) {
+      super(message || '')
+      this.name = name || 'Error'
+      this.code = 0
+    }
+  }
+}
+`
+
+  return {
+    name: 'app-runtime-polyfills',
+    generateBundle(_options: unknown, bundle: Record<string, any>) {
+      Object.values(bundle).forEach((item) => {
+        if (!item.fileName?.endsWith('app-service.js')) {
+          return
+        }
+        if (item.type === 'chunk' && typeof item.code === 'string' && !item.code.includes(marker)) {
+          item.code = `${polyfills}\n${item.code}`
+        }
+        if (item.type === 'asset' && typeof item.source === 'string' && !item.source.includes(marker)) {
+          item.source = `${polyfills}\n${item.source}`
+        }
+      })
+    },
+  }
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }) => {
   // @see https://unocss.dev/
@@ -186,6 +218,7 @@ export default defineConfig(({ command, mode }) => {
           verbose: mode === 'development', // 开发模式显示详细日志
         },
       ),
+      UNI_PLATFORM === 'app' && appRuntimePolyfillPlugin(),
       syncManifestPlugin(),
       vitePluginEruda({
         open: UNI_PLATFORM === 'h5' && mode === 'development',

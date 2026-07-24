@@ -4,6 +4,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { navigateToInterceptor } from '@/router/interceptor'
 import { useDictStore, useTokenStore } from '@/store'
 import { hasTokenInfo, isAccessTokenExpired } from '@/utils/auth'
+import { toLoginPage } from '@/utils/toLoginPage'
 
 interface UpdatePopupParams {
   latestVersion?: string
@@ -46,8 +47,13 @@ function runGlobalAuthGuard(options?: any) {
     }, 0)
     return false
   }
-  navigateToInterceptor.invoke({ url, query: options?.query })
-  return true
+  const allow = navigateToInterceptor.invoke({ url, query: options?.query })
+  if (allow === false) {
+    setTimeout(() => {
+      toLoginPage.flush()
+    }, 0)
+  }
+  return allow !== false
 }
 
 onLaunch((options) => {

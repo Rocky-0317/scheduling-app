@@ -283,9 +283,9 @@ function handleUpdate() {
   // #ifdef APP-PLUS
   plus.downloader.createDownload(downloadUrl.value, {
     filename: '_scheduling_app.apk',
-  }, (res) => {
-    if (res.status === 200) {
-      plus.runtime.install(res.filename)
+  }, (download, status) => {
+    if (status === 200 && download.filename) {
+      plus.runtime.install(download.filename)
     }
   }).start()
   // #endif

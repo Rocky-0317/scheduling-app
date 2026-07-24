@@ -185,6 +185,18 @@ function splitMultiValue(value?: string | string[]) {
   return String(value).split(',').map(item => item.trim()).filter(Boolean)
 }
 
+function normalizeStoreRow(row: any): OutboundPersonnel {
+  const source = row || {}
+  return {
+    ...source,
+    id: source.id ?? source.personnelId ?? source.storeUserId ?? source.userId,
+    userId: source.userId ?? source.storeUserId,
+    userName: source.userName ?? source.username ?? source.loginName,
+    personName: source.personName ?? source.storeName ?? source.name ?? source.nickName,
+    phone: source.phone ?? source.mobile ?? source.phonenumber,
+  }
+}
+
 export function normalizePersonnelPayload<T extends OutboundPersonnel>(data: T) {
   return {
     ...data,
@@ -264,18 +276,25 @@ export const businessApi = {
   },
 
   listStore(params: Record<string, any>) {
-    return http.get<{ code: number, msg: string, data: OutboundPersonnel[] }>('/business/outboundPersonnel/store/list', params)
-      .then((res) => {
+    return http.get<OutboundPersonnel[] | { data?: OutboundPersonnel[], rows?: OutboundPersonnel[], total?: number }>('/business/outboundPersonnel/store/list', params)
+      .then((res: any) => {
+        const rows = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.rows)
+            ? res.rows
+            : Array.isArray(res?.data)
+              ? res.data
+              : []
         // 统一转成框架标准分页结构，解决读取rows为空问题
         return {
-          rows: res.data || [],
-          total: res.data?.length || 0,
+          rows: rows.map(normalizeStoreRow),
+          total: res?.total ?? rows.length,
         } as RuoYiPageResult<OutboundPersonnel>
       })
   },
   // 新增门店详情接口，和人员详情接口复用路径，统一读取门店完整数据
   getStoreDetail(id: number) {
-    return http.get<OutboundPersonnel>(`/business/outboundPersonnel/${id}`)
+    return http.get<OutboundPersonnel>(`/business/outboundPersonnel/${id}`).then(normalizeStoreRow)
   },
   getOutboundPersonnel(id: number) {
     return http.get<OutboundPersonnel>(`/business/outboundPersonnel/${id}`)

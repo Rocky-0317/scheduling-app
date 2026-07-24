@@ -261,7 +261,7 @@ const timeoutConfig = reactive({
 
 const canEdit = computed(() => !config.value.readonly && !!config.value.update)
 const isTimeoutModule = computed(() => config.value.key === 'timeoutReminder')
-const isModernModule = computed(() => ['outboundPersonnel', 'customerInfo', 'storeList', 'storeInfo'].includes(config.value.key))
+const isModernModule = computed(() => ['outboundPersonnel', 'bizPackage', 'customerInfo', 'storeList', 'storeInfo'].includes(config.value.key))
 const isPackageModule = computed(() => config.value.key === 'bizPackage')
 const activeSearchCount = computed(() => Object.values(queryParams.value).filter(value => value !== undefined && value !== '').length)
 const quickSearchPlaceholder = computed(() => {
@@ -519,8 +519,23 @@ function getValue(item: Record<string, any>, key: string) {
   return formatValue(item[key], key)
 }
 
+function formatCurrency(value: any) {
+  if (value === undefined || value === null || value === '') {
+    return '-'
+  }
+  const amount = Number(value)
+  if (!Number.isFinite(amount)) {
+    return String(value)
+  }
+  return `￥${amount.toFixed(2)}`
+}
+
 // 核心：统一格式化，businessType和grid走完全相同的source翻译逻辑
 function formatValue(value: any, fieldKey?: string) {
+  if (fieldKey === 'price' || fieldKey === 'packagePrice') {
+    return formatCurrency(value)
+  }
+
   const source = fieldKey ? getFieldSource(fieldKey) : undefined
   const rawVal = value
 

@@ -178,7 +178,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     update: businessApi.updatePackage,
     remove: businessApi.deletePackage,
     primaryKey: 'packageName',
-    secondaryKeys: ['packageCode', 'businessType', 'price', 'description'],
+    secondaryKeys: ['packageCode', 'price', 'description'],
     badgeKey: 'status',
     badgeOptions: enableOptions,
     canCreate: true,
@@ -225,7 +225,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     key: 'storeList',
     title: '门店列表',
     list: businessApi.listStore,
-    get: businessApi.getOutboundPersonnel,
+    get: businessApi.getStoreDetail,
     primaryKey: 'personName',
     secondaryKeys: ['userName', 'phone', 'businessType', 'grid'],
     badgeKey: 'status',
@@ -251,7 +251,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     key: 'storeInfo',
     title: '门店信息',
     list: businessApi.listStore,
-    get: businessApi.getOutboundPersonnel,
+    get: businessApi.getStoreDetail,
     primaryKey: 'personName',
     secondaryKeys: ['userName', 'phone', 'businessType', 'grid'],
     badgeKey: 'status',
@@ -386,7 +386,7 @@ export async function loadSourceOptions(source: 'role' | 'businessType' | 'grid'
     switch (source) {
       case 'businessType': {
         const res = await businessApi.listBusinessTypeOptions()
-        const dataList = Array.isArray(res) ? res : res.data ?? []
+        const dataList = Array.isArray(res) ? res : []
         list = dataList.map(item => ({
           label: item.dictLabel || item.label || '',
           // 统一转字符串，避免数字/字符串类型不匹配

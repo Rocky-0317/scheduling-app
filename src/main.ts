@@ -1,4 +1,3 @@
-import './utils/text-encoder-polyfill'
 import { createSSRApp } from 'vue'
 import App from './App.vue'
 import { requestInterceptor } from './http/interceptor'

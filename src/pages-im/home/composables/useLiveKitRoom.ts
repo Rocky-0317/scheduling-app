@@ -1,8 +1,11 @@
 import type { Ref } from 'vue'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { ref, shallowRef } from 'vue'
-import { Room, RoomEvent, Track } from 'livekit-client'
 import { useImRtc } from './useImRtc'
+
+type LiveKitModule = typeof import('livekit-client')
+type Room = import('livekit-client').Room
+type Track = import('livekit-client').Track
 
 /** 参与者媒体轨道；视频优先屏幕共享，其次摄像头 */
 export interface RtcParticipantTracks {
@@ -30,7 +33,17 @@ export function useLiveKitRoom(options: {
   const reconnecting = ref(false) // 网络重连状态
   const screenShareEnabled = ref(false) // 屏幕共享状态
   const participantTracks = shallowRef<RtcParticipantTracks[]>([]) // 按参与者归属的媒体轨道
+  let liveKit: LiveKitModule | undefined
   let room: Room | undefined
+
+  async function loadLiveKit() {
+    // #ifdef H5
+    liveKit ||= await import('livekit-client')
+    return liveKit
+    // #endif
+
+    return undefined
+  }
 
   /** 释放已经失效的房间实例 */
   async function disconnectStaleRoom(staleRoom: Room) {
@@ -44,7 +57,8 @@ export function useLiveKitRoom(options: {
 
   /** 写入参与者媒体轨道 */
   function upsertParticipantTrack(track: Track, userId: number, isLocal: boolean) {
-    if (!userId || (track.kind === Track.Kind.Audio && track.source !== Track.Source.Microphone)) {
+    const TrackApi = liveKit?.Track
+    if (!TrackApi || !userId || (track.kind === TrackApi.Kind.Audio && track.source !== TrackApi.Source.Microphone)) {
       return
     }
     const current = participantTracks.value.find(item => item.userId === userId)
@@ -53,10 +67,10 @@ export function useLiveKitRoom(options: {
       userId,
       isLocal,
     }
-    if (track.kind === Track.Kind.Audio) {
+    if (track.kind === TrackApi.Kind.Audio) {
       next.audioTrack = track
       next.audioMuted = track.isMuted
-    } else if (track.source === Track.Source.ScreenShare) {
+    } else if (track.source === TrackApi.Source.ScreenShare) {
       next.screenShareTrack = track
       next.screenShareMuted = track.isMuted
     } else {
@@ -127,6 +141,11 @@ export function useLiveKitRoom(options: {
     if (!call.value?.token || !call.value.livekitUrl || room) {
       return
     }
+    const liveKitModule = await loadLiveKit()
+    if (!liveKitModule) {
+      return
+    }
+    const { Room, RoomEvent } = liveKitModule
     const currentRoom = new Room({ adaptiveStream: true, dynacast: true })
     let connected = false
     room = currentRoom

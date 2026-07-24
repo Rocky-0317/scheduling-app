@@ -74,24 +74,68 @@
       @confirm="confirmDatePicker"
     />
 
+    <!-- 编辑/新增：保存按钮 -->
     <view v-if="!isView" class="yd-detail-footer">
       <wd-button type="primary" block :loading="submitLoading" @click="submitForm">
         <wd-icon name="check-circle" size="28rpx" color="#fff" custom-class="button-icon" />
         保存
       </wd-button>
     </view>
+
+    <!-- 门店详情：查看二维码按钮 -->
+    <view v-if="isView && isStoreModule" class="yd-detail-footer">
+      <wd-button type="primary" block @click="openQrDialog">
+        <wd-icon name="picture" size="28rpx" color="#fff" custom-class="button-icon" />
+        查看门店二维码
+      </wd-button>
+    </view>
+
+    <!-- 门店二维码弹窗 -->
+    <wd-popup v-model="qrDialogVisible" position="center" custom-style="border-radius: 24rpx; width: 600rpx;">
+      <view class="qr-dialog">
+        <view class="qr-title">
+          门店推广二维码
+        </view>
+        <view class="qr-box">
+          <image v-if="qrCodeUrl" :src="qrCodeUrl" mode="aspectFit" class="qr-img" />
+          <view v-else class="qr-loading">
+            二维码生成中...
+          </view>
+        </view>
+        <view class="qr-tip">
+          手机扫码进入门店套餐页面
+        </view>
+
+        <!-- 链接展示区 -->
+        <!--        <view class="qr-link-box"> -->
+        <!--          <view class="qr-link-label">推广链接</view> -->
+        <!--          <view class="qr-link-text">{{ shopH5Url }}</view> -->
+        <!--          <wd-button size="small" type="primary" plain block @click="copyLink"> -->
+        <!--            <wd-icon name="copy" size="24rpx" color="#2f7dff" custom-class="button-icon" /> -->
+        <!--            复制链接 -->
+        <!--          </wd-button> -->
+        <!--        </view> -->
+
+        <view class="qr-footer">
+          <wd-button block @click="qrDialogVisible = false">
+            关闭
+          </wd-button>
+        </view>
+      </view>
+    </wd-popup>
   </view>
 </template>
 
 <script setup lang="ts">
 import type { FormInstance } from '@wot-ui/ui/components/wd-form/types'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { delay, navigateBackPlus } from '@/utils'
 import { createFormSchema } from '@/utils/wot'
 import type { BusinessField } from '@/pages-business/config'
 import { businessApi } from '@/api/business'
 import { getModuleConfig } from '@/pages-business/config'
+import QRCode from 'qrcode'
 
 const props = defineProps<{
   module?: string
@@ -115,12 +159,25 @@ const datePickerValue = ref<number>(Date.now())
 const activeDateKey = ref('')
 const roleOptions = ref<any[]>([])
 const businessTypeOptions = ref<Array<{ label: string, value: string }>>([])
-// grid value统一为字符串名称，对齐网页端
 const gridOptions = ref<Array<{ label: string, value: string }>>([])
+const qrDialogVisible = ref(false)
+const qrCodeUrl = ref('')
+
 const config = computed(() => getModuleConfig(props.module))
 const isView = computed(() => props.mode === 'view' || config.value.readonly)
 const isEdit = computed(() => !!props.id)
 const isPersonnelModule = computed(() => config.value.key === 'outboundPersonnel')
+// 判断是否为门店相关模块（门店列表、门店信息）
+const isStoreModule = computed(() => ['storeList', 'storeInfo'].includes(config.value.key))
+
+// 门店H5推广链接：和web端规则完全一致 域名/h5/package-shop.html?shopId=门店ID
+const shopH5Url = computed(() => {
+  const shopId = formData.value.id || props.id
+  // 固定使用80端口的web服务地址
+  const h5Base = import.meta.env.VITE_H5_WEB_BASE
+  return `${h5Base}/h5/package-shop.html?shopId=${shopId}`
+})
+
 const selectedRole = computed(() => roleOptions.value.find(item => String(item.value) === String(formData.value.roleId)))
 const needShowGridType = computed(() => {
   if (!isPersonnelModule.value) {
@@ -363,11 +420,50 @@ async function loadGridOptions(force = false) {
   if (!force && gridOptions.value.length > 0)
     return
   const res = await businessApi.listActiveGridOptions()
-  // 核心修复：value使用网格中文名称，和网页端统一
   gridOptions.value = (res.rows || []).map(item => ({
     label: item.gridName || '',
     value: item.gridName || '',
   })).filter(item => item.value)
+}
+
+// 生成二维码
+async function generateQrCode() {
+  try {
+    qrCodeUrl.value = ''
+    const url = shopH5Url.value
+    // 生成base64格式二维码，尺寸和web端保持一致
+    qrCodeUrl.value = await QRCode.toDataURL(url, {
+      width: 460,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+    })
+  } catch (err) {
+    console.error('二维码生成失败', err)
+    toast.error('二维码生成失败')
+  }
+}
+
+// 打开二维码弹窗
+function openQrDialog() {
+  if (!formData.value.id && !props.id) {
+    toast.error('未获取到门店ID')
+    return
+  }
+  qrDialogVisible.value = true
+  // 弹窗打开后生成二维码，确保DOM就绪
+  nextTick(() => {
+    generateQrCode()
+  })
+}
+
+// 复制链接
+function copyLink() {
+  uni.setClipboardData({
+    data: shopH5Url.value,
+    success: () => {
+      toast.success('链接已复制')
+    },
+  })
 }
 
 function handleBack() {
@@ -407,5 +503,73 @@ onMounted(async () => {
 :deep(.button-icon) {
   margin-right: 8rpx;
   vertical-align: -3rpx;
+}
+
+.qr-dialog {
+  padding: 40rpx 32rpx 32rpx;
+  background: #fff;
+}
+
+.qr-title {
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0b2b5c;
+  margin-bottom: 32rpx;
+}
+
+.qr-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30rpx 0;
+  background: #f8fafc;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  min-height: 460rpx;
+}
+
+.qr-img {
+  width: 460rpx;
+  height: 460rpx;
+}
+
+.qr-loading {
+  font-size: 26rpx;
+  color: #94a3b8;
+}
+
+.qr-tip {
+  text-align: center;
+  font-size: 26rpx;
+  color: #64748b;
+  margin-bottom: 24rpx;
+}
+
+/* 新增：链接区域样式 */
+.qr-link-box {
+  padding: 20rpx;
+  background: #f5f8ff;
+  border-radius: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.qr-link-label {
+  font-size: 24rpx;
+  color: #475569;
+  margin-bottom: 10rpx;
+  font-weight: 600;
+}
+
+.qr-link-text {
+  font-size: 24rpx;
+  color: #2f7dff;
+  word-break: break-all;
+  line-height: 1.5;
+  margin-bottom: 16rpx;
+}
+
+.qr-footer {
+  margin-top: 16rpx;
 }
 </style>

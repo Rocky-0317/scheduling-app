@@ -206,7 +206,8 @@ const { userInfo, roles } = storeToRefs(userStore)
 const userProfile = ref<UserProfileVO | null>(null)
 const tenantEnabled = computed(() => import.meta.env.VITE_APP_TENANT_ENABLE === 'true')
 
-const profileRoles = computed(() => userProfile.value?.roles?.map(role => role.name).filter(Boolean) || [])
+// 取 roleName 中文名称
+const profileRoles = computed(() => userProfile.value?.roles?.map(role => role.roleName).filter(Boolean) || [])
 const roleNames = computed(() => {
   if (profileRoles.value.length) {
     return profileRoles.value.join('、')

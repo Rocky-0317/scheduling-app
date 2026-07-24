@@ -1,28 +1,47 @@
 import { http } from '@/http/http'
 
+/** 用户角色子项（对齐后端返回roles） */
+export interface UserProfileRoleVO {
+  roleId: number
+  roleName: string
+  roleKey: string
+}
+
+/** 用户部门子项 */
+export interface UserProfileDeptVO {
+  deptId: number
+  deptName: string
+}
+
+/** 用户岗位子项 */
+export interface UserProfilePostVO {
+  postId: number
+  postName: string
+}
+
 /** 用户个人中心信息 */
 export interface UserProfileVO {
-  id: number
-  username: string
-  nickname: string
+  userId: number
+  userName: string
+  nickName: string
   email?: string
-  mobile?: string
-  sex?: number
+  phonenumber?: string
+  sex?: string
   avatar?: string
   loginIp?: string
-  loginDate?: string | number | Date
-  createTime?: string | number | Date
-  roles?: { id: number, name: string }[]
-  dept?: { id: number, name: string }
-  posts?: { id: number, name: string }[]
+  loginDate?: string
+  createTime?: string
+  roles?: UserProfileRoleVO[]
+  dept?: UserProfileDeptVO
+  posts?: UserProfilePostVO[]
 }
 
 /** 更新个人信息请求 */
 export interface UpdateProfileReqVO {
-  nickname?: string
+  nickName?: string
   email?: string
-  mobile?: string
-  sex?: number
+  phonenumber?: string
+  sex?: string
   avatar?: string
 }
 

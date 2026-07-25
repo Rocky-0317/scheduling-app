@@ -179,7 +179,7 @@ const quickActions: Array<{ key: string, title: string, icon: string, module: st
   { key: 'workbench', title: '业务工作台', icon: 'dashboard', module: 'workbench' },
   { key: 'outboundRecord', title: '外呼记录', icon: 'phone', module: 'outboundRecord' },
   { key: 'assignmentTree', title: '分发记录', icon: 'arrow-right', module: 'assignmentTree' },
-  { key: 'timeoutReminder', title: '超时提醒', icon: 'exclamation-circle', module: 'timeoutReminder' },
+  { key: 'timeoutReminder', title: '超时记录', icon: 'exclamation-circle', module: 'timeoutReminder' },
 ]
 
 const greeting = computed(() => {

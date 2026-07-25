@@ -122,30 +122,86 @@
           </view>
 
           <view v-if="!isModernModule" class="record-actions">
-            <wd-button v-if="canOpenDetail(item)" size="small" plain @click="openDetail(item)">
-              <wd-icon name="search-line" size="24rpx" color="#475569" custom-class="button-icon" />
-              详情
-            </wd-button>
-            <wd-button v-if="canEdit" size="small" type="success" plain @click="openForm(item)">
-              <wd-icon name="edit" size="24rpx" color="#16a34a" custom-class="button-icon" />
-              编辑
-            </wd-button>
-            <wd-button v-if="config.claim && item.assignmentStatus === '1'" size="small" type="primary" plain @click="claimRecord(item)">
-              <wd-icon name="check-circle" size="24rpx" color="#2f7dff" custom-class="button-icon" />
-              领取
-            </wd-button>
-            <wd-button v-if="config.uploadImages && getItemId(item)" size="small" type="info" plain @click="uploadImages(item)">
-              <wd-icon name="arrow-right" size="24rpx" color="#0891b2" custom-class="button-icon" />
-              上传图片
-            </wd-button>
-            <wd-button v-if="config.remove" size="small" plain @click="removeItem(item)">
-              <wd-icon name="delete" size="24rpx" color="#dc2626" custom-class="button-icon" />
-              删除
-            </wd-button>
+            <!-- 分发记录模块：查看分发明细 -->
+            <template v-if="config.key === 'assignmentTree'">
+              <wd-button size="small" type="primary" plain @click="openAssignmentDetail(item)">
+                <wd-icon name="list" size="24rpx" color="#2f7dff" custom-class="button-icon" />
+                查看明细
+              </wd-button>
+            </template>
+            <!-- 其他模块原有操作按钮 -->
+            <template v-else>
+              <wd-button v-if="canOpenDetail(item)" size="small" plain @click="openDetail(item)">
+                <wd-icon name="search-line" size="24rpx" color="#475569" custom-class="button-icon" />
+                详情
+              </wd-button>
+              <wd-button v-if="canEdit" size="small" type="success" plain @click="openForm(item)">
+                <wd-icon name="edit" size="24rpx" color="#16a34a" custom-class="button-icon" />
+                编辑
+              </wd-button>
+              <wd-button v-if="config.claim && item.assignmentStatus === '1'" size="small" type="primary" plain @click="claimRecord(item)">
+                <wd-icon name="check-circle" size="24rpx" color="#2f7dff" custom-class="button-icon" />
+                领取
+              </wd-button>
+              <wd-button v-if="config.uploadImages && getItemId(item)" size="small" type="info" plain @click="uploadImages(item)">
+                <wd-icon name="arrow-right" size="24rpx" color="#0891b2" custom-class="button-icon" />
+                上传图片
+              </wd-button>
+              <wd-button v-if="config.remove" size="small" plain @click="removeItem(item)">
+                <wd-icon name="delete" size="24rpx" color="#dc2626" custom-class="button-icon" />
+                删除
+              </wd-button>
+            </template>
           </view>
         </view>
       </view>
     </z-paging>
+
+    <!-- 分发明细弹窗 -->
+    <wd-popup v-model="detailVisible" position="bottom" custom-style="border-radius: 24rpx 24rpx 0 0; height: 70vh; width: 100%; box-sizing: border-box;">
+      <view class="detail-panel">
+        <view class="detail-head">
+          <view>
+            <view class="detail-title">
+              分发明细列表
+            </view>
+            <view class="detail-subtitle">
+              共 {{ currentChildList.length }} 条分发记录
+            </view>
+          </view>
+          <wd-icon name="close" size="34rpx" color="#64748b" @click="detailVisible = false" />
+        </view>
+        <scroll-view scroll-y class="detail-scroll">
+          <view v-for="item in currentChildList" :key="item.assignmentId" class="detail-card">
+            <view class="detail-row">
+              <text class="detail-label">分发人</text>
+              <text class="detail-text">{{ item.assignNickName || '-' }}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">领取人</text>
+              <text class="detail-text">{{ item.assignedPersonName || '-' }}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">分发时间</text>
+              <text class="detail-text">{{ item.assignedTime || '-' }}</text>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">领取状态</text>
+              <wd-tag :type="item.claimStatus === '1' ? 'success' : 'warning'" plain size="small">
+                {{ item.claimStatus === '1' ? '已领取' : '未领取' }}
+              </wd-tag>
+            </view>
+            <view class="detail-row">
+              <text class="detail-label">领取时间</text>
+              <text class="detail-text">{{ item.claimedTime || '-' }}</text>
+            </view>
+          </view>
+          <view v-if="!currentChildList.length" class="detail-empty">
+            暂无分发明细
+          </view>
+        </scroll-view>
+      </view>
+    </wd-popup>
 
     <wd-fab v-if="config.canCreate" position="right-bottom" type="primary" :expandable="false" @click="openCreate" />
 
@@ -162,7 +218,7 @@
           <text>超时时间</text>
           <view class="config-input">
             <wd-input-number v-model="timeoutConfig.timeoutDays" :min="1" :precision="0" />
-            <text class="config-unit">分钟</text>
+            <text class="config-unit">天</text>
           </view>
         </view>
         <view class="config-actions">
@@ -258,6 +314,9 @@ const timeoutConfig = reactive({
   status: 1,
   timeoutDays: 30,
 })
+// 分发明细弹窗
+const detailVisible = ref(false)
+const currentChildList = ref<any[]>([])
 
 const canEdit = computed(() => !config.value.readonly && !!config.value.update)
 const isTimeoutModule = computed(() => config.value.key === 'timeoutReminder')
@@ -372,6 +431,12 @@ function canOpenDetail(item: any) {
 function getItemId(item: any) {
   const idKey = config.value.idKey || 'id'
   return item?.[idKey] || item?.id
+}
+
+// 打开分发明细弹窗
+function openAssignmentDetail(row: any) {
+  currentChildList.value = row.children || []
+  detailVisible.value = true
 }
 
 async function removeItem(item: any) {
@@ -534,6 +599,13 @@ function formatCurrency(value: any) {
 function formatValue(value: any, fieldKey?: string) {
   if (fieldKey === 'price' || fieldKey === 'packagePrice') {
     return formatCurrency(value)
+  }
+
+  if (fieldKey === 'overdueDays') {
+    if (value === undefined || value === null || value === '') {
+      return '-'
+    }
+    return `${value}天`
   }
 
   const source = fieldKey ? getFieldSource(fieldKey) : undefined
@@ -970,6 +1042,85 @@ onMounted(async () => {
   margin-right: 12rpx;
   border-radius: 8rpx;
   background: #f1f5f9;
+}
+
+/* 分发明细弹窗样式 - 修复高度计算 */
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 28rpx 24rpx 20rpx;
+  border-bottom: 1rpx solid #edf2f8;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.detail-title {
+  color: #0b2b5c;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.detail-subtitle {
+  margin-top: 6rpx;
+  color: #7a8799;
+  font-size: 23rpx;
+}
+
+/* 核心修复：滚动容器占满剩余高度，height:0 触发 flex 计算 */
+.detail-scroll {
+  flex: 1;
+  height: 0;
+  padding: 20rpx 24rpx;
+  box-sizing: border-box;
+}
+
+.detail-card {
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  border: 1rpx solid #eef2f7;
+  border-radius: 16rpx;
+  background: #fafbff;
+  box-sizing: border-box;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64rpx;
+  gap: 20rpx;
+}
+
+.detail-label {
+  flex-shrink: 0;
+  color: #94a3b8;
+  font-size: 26rpx;
+}
+
+.detail-text {
+  flex: 1;
+  text-align: right;
+  color: #0b2b5c;
+  font-size: 26rpx;
+  font-weight: 500;
+  word-break: break-all;
+}
+
+.detail-empty {
+  padding: 80rpx 0;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 26rpx;
 }
 
 .config-panel {

@@ -82,7 +82,7 @@ const entries = [
   { key: 'outboundGrid', title: '网格管理', desc: '维护业务网格基础资料', icon: 'location', color: '#0891b2', tint: '#ecfeff' },
   { key: 'bizPackage', title: '套餐管理', desc: '维护套餐名称、编码和价格', icon: 'home', color: '#7c3aed', tint: '#f5f3ff' },
   { key: 'customerInfo', title: '客户信息', desc: '查看和维护客户线索', icon: 'user', color: '#d97706', tint: '#fff7ed' },
-  { key: 'timeoutReminder', title: '超时提醒', desc: '查看超时未处理任务', icon: 'exclamation-circle', color: '#dc2626', tint: '#fef2f2' },
+  { key: 'timeoutReminder', title: '超时记录', desc: '查看超时未处理任务', icon: 'exclamation-circle', color: '#dc2626', tint: '#fef2f2' },
   { key: 'assignmentTree', title: '分发记录', desc: '查看外呼记录分发链路', icon: 'arrow-right', color: '#2f7dff', tint: '#eff6ff' },
 ]
 

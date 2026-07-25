@@ -41,7 +41,7 @@
             },
             {
               "key": "timeoutReminder",
-              "name": "超时提醒",
+              "name": "超时记录",
               "icon": "exclamation-circle",
               "iconColor": "#d97706",
               "url": "/pages-business/manager/index?module=timeoutReminder",

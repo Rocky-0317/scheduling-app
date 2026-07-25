@@ -273,12 +273,12 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
   },
   timeoutReminder: {
     key: 'timeoutReminder',
-    title: '超时提醒',
+    title: '超时记录',
     list: businessApi.listTimeoutReminders,
     primaryKey: 'customerNumber',
     secondaryKeys: ['packageName', 'grid', 'receiverName', 'orderTime', 'overdueDays'],
-    badgeKey: 'assignmentStatus',
-    badgeOptions: assignmentOptions,
+    // badgeKey: 'assignmentStatus',
+    // badgeOptions: assignmentOptions,
     readonly: true,
     searchFields: [
       { key: 'customerNumber', label: '客户号码' },
@@ -294,13 +294,15 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
   assignmentTree: {
     key: 'assignmentTree',
     title: '分发记录',
-    list: params => businessApi.getAssignmentTree(params).then(rows => ({ rows: flattenAssignmentTree(rows), total: flattenAssignmentTree(rows).length })),
+    list: params => businessApi.getAssignmentTree(params).then(data => ({
+      rows: data || [],
+      total: data?.length || 0,
+    })),
     primaryKey: 'customerNumber',
-    secondaryKeys: ['packageName', 'grid', 'assignedPersonName', 'claimedTime'],
-    badgeKey: 'claimStatus',
-    badgeOptions: claimOptions,
+    secondaryKeys: ['packageName', 'grid', 'businessType'],
     readonly: true,
     searchFields: [
+      { key: 'businessType', label: '业务类型', type: 'picker', source: 'businessType' },
       { key: 'customerNumber', label: '客户号码' },
       { key: 'packageName', label: '套餐' },
       { key: 'grid', label: '网格', source: 'grid' },
@@ -310,23 +312,6 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     ],
     formFields: [],
   },
-}
-
-function flattenAssignmentTree(rows: any[] = []) {
-  return rows.flatMap((row) => {
-    const children = Array.isArray(row.children) ? row.children : []
-    if (!children.length) {
-      return [row]
-    }
-    return children.map(child => ({
-      ...row,
-      ...child,
-      id: child.assignmentId || child.id || row.id,
-      customerNumber: child.customerNumber || row.customerNumber,
-      packageName: child.packageName || row.packageName,
-      grid: child.grid || row.grid,
-    }))
-  })
 }
 
 export function getModuleConfig(module?: string) {

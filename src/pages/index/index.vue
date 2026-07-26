@@ -131,11 +131,19 @@
         <view class="modal-footer">
           <text v-if="forceUpdate" class="force-tip">当前版本不可继续使用，请更新 APP</text>
           <view class="btn-group">
-            <button v-if="!forceUpdate" class="btn-cancel" @click="closePopup">
+            <button v-if="!forceUpdate" class="btn-cancel" :disabled="downloading || decompressing" @click="closePopup">
               稍后再说
             </button>
-            <button class="btn-primary" @click="handleUpdate">
-              立即更新
+            <button class="btn-primary" :disabled="downloading || decompressing" @click="handleUpdate">
+              <template v-if="downloading">
+                下载中 {{ downloadProgress }}%
+              </template>
+              <template v-else-if="decompressing">
+                解压安装包...
+              </template>
+              <template v-else>
+                立即更新
+              </template>
             </button>
           </view>
         </view>
@@ -241,7 +249,7 @@ function goTab(url: string) {
   uni.switchTab({ url })
 }
 
-// ====================== 版本更新弹窗【修复：标准全局事件监听，移除轮询】 ======================
+// ====================== 版本更新【修复：ZIP下载→解压→安装全链路】 ======================
 interface UpdatePopupParams {
   latestVersion?: string
   localVersion?: string
@@ -260,9 +268,12 @@ const downloadUrl = ref('')
 const forceUpdate = ref(false)
 let skipUpdateHandler: (() => void) | undefined
 
-// 统一事件回调函数（必须单独抽离，卸载时精准清除监听）
+const downloading = ref(false)
+const downloadProgress = ref(0)
+const decompressing = ref(false)
+
+// 统一事件回调
 function handleUpdatePopupEvent(data: UpdatePopupParams) {
-  console.log('监听到版本更新事件', data)
   latestVersion.value = data.latestVersion || ''
   localVersion.value = data.localVersion || ''
   updateTitle.value = data.updateTitle || '发现新版本'
@@ -274,10 +285,95 @@ function handleUpdatePopupEvent(data: UpdatePopupParams) {
 }
 
 function closePopup() {
-  if (forceUpdate.value)
+  if (forceUpdate.value || downloading.value || decompressing.value)
     return
   skipUpdateHandler?.()
   popupOpen.value = false
+}
+
+/**
+ * 递归遍历目录，查找.apk文件
+ */
+function findApkInDir(dirEntry: any): string | null {
+  const entries = dirEntry.createReader().readEntriesSync()
+  for (const entry of entries) {
+    if (entry.isFile && entry.name.toLowerCase().endsWith('.apk')) {
+      return entry.fullPath
+    }
+    if (entry.isDirectory) {
+      const apkPath = findApkInDir(entry)
+      if (apkPath)
+        return apkPath
+    }
+  }
+  return null
+}
+
+/**
+ * 解压完成后，查找APK并执行安装
+ */
+function findApkAndInstall(dirPath: string) {
+  // #ifdef APP-PLUS
+  plus.io.resolveLocalFileSystemURL(
+    dirPath,
+    (dirEntry: any) => {
+      try {
+        const apkPath = findApkInDir(dirEntry)
+        if (apkPath) {
+          decompressing.value = false
+          downloading.value = false
+          console.log('找到APK，开始安装：', apkPath)
+          plus.runtime.install(
+            apkPath,
+            { force: false },
+            () => {
+              uni.showToast({ title: '安装包已启动，请完成安装', icon: 'none' })
+            },
+            (err: any) => {
+              console.error('安装失败：', err)
+              uni.showToast({ title: '安装启动失败，请手动安装', icon: 'none' })
+            },
+          )
+        } else {
+          decompressing.value = false
+          downloading.value = false
+          uni.showToast({ title: '压缩包内未找到安装文件', icon: 'none' })
+        }
+      } catch (e) {
+        decompressing.value = false
+        downloading.value = false
+        console.error('遍历目录失败：', e)
+        uni.showToast({ title: '解析安装包失败', icon: 'none' })
+      }
+    },
+    (err: any) => {
+      decompressing.value = false
+      downloading.value = false
+      console.error('打开解压目录失败：', err)
+      uni.showToast({ title: '解压目录无效', icon: 'none' })
+    },
+  )
+  // #endif
+}
+
+/**
+ * 删除旧的解压目录，避免文件残留冲突
+ */
+function removeOldExtractDir(dirPath: string): Promise<void> {
+  return new Promise((resolve) => {
+    // #ifdef APP-PLUS
+    plus.io.resolveLocalFileSystemURL(
+      dirPath,
+      (entry: any) => {
+        entry.removeRecursively(() => resolve(), () => resolve())
+      },
+      () => resolve(),
+    )
+    // #endif
+    // #ifndef APP-PLUS
+    resolve()
+    // #endif
+  })
 }
 
 function handleUpdate() {
@@ -285,14 +381,57 @@ function handleUpdate() {
     uni.showToast({ title: '暂无下载地址', icon: 'none' })
     return
   }
+  if (downloading.value || decompressing.value)
+    return
+
   // #ifdef APP-PLUS
-  plus.downloader.createDownload(downloadUrl.value, {
-    filename: '_scheduling_app.apk',
-  }, (download, status) => {
-    if (status === 200 && download.filename) {
-      plus.runtime.install(download.filename)
-    }
-  }).start()
+  downloading.value = true
+  downloadProgress.value = 0
+
+  const zipSavePath = '_downloads/app_update.zip'
+  const extractTargetDir = '_downloads/app_update/'
+
+  // 先清空旧解压目录
+  removeOldExtractDir(extractTargetDir).then(() => {
+    const downloadTask = plus.downloader.createDownload(
+      downloadUrl.value,
+      { filename: zipSavePath, timeout: 300, retry: 1 },
+      (download, status) => {
+        if (status === 200 && download.filename) {
+          console.log('ZIP下载完成，开始解压：', download.filename)
+          decompressing.value = true
+
+          plus.zip.decompress(
+            download.filename,
+            extractTargetDir,
+            () => {
+              console.log('解压成功，查找APK')
+              findApkAndInstall(extractTargetDir)
+            },
+            (err: any) => {
+              decompressing.value = false
+              downloading.value = false
+              console.error('解压失败：', err)
+              uni.showToast({ title: '安装包解压失败，请重试', icon: 'none' })
+            },
+          )
+        } else {
+          downloading.value = false
+          console.error('下载失败，状态码：', status)
+          uni.showToast({ title: '下载失败，请检查网络重试', icon: 'none' })
+        }
+      },
+    )
+
+    // 监听下载进度
+    downloadTask.addEventListener('statechanged', (task: any) => {
+      if (task.state === 3 && task.totalSize > 0) {
+        downloadProgress.value = Math.round((task.downloadedSize / task.totalSize) * 100)
+      }
+    })
+
+    downloadTask.start()
+  })
   // #endif
 
   // #ifdef H5 || MP-WEIXIN
@@ -301,13 +440,11 @@ function handleUpdate() {
 }
 
 onMounted(() => {
-  // 注册全局更新弹窗事件监听
   uni.$on('app:openUpdatePopup', handleUpdatePopupEvent)
   loadSummary()
 })
 
 onUnmounted(() => {
-  // 精准移除当前页面的事件监听，不影响全局其他页面
   uni.$off('app:openUpdatePopup', handleUpdatePopupEvent)
 })
 // =================================================================
@@ -669,7 +806,7 @@ onShow(() => {
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
-  z-index: 9999999;
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -740,5 +877,9 @@ onShow(() => {
 .btn-primary {
   color: #fff;
   background: #2f7dff;
+}
+.btn-cancel:disabled,
+.btn-primary:disabled {
+  opacity: 0.7;
 }
 </style>

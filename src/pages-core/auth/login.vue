@@ -80,8 +80,8 @@
         />
       </view>
       <view class="login-options">
-        <view class="remember-row">
-          <wd-checkbox v-model="rememberMe" type="square" />
+        <view class="remember-row" @click="toggleRemember">
+          <wd-checkbox v-model="rememberMe" type="square" @click.stop />
           <text>记住我</text>
         </view>
       </view>
@@ -227,6 +227,10 @@ function validateTenant() {
   }
   return Boolean(tenantPickerRef.value?.validate())
 }
+
+function toggleRemember() {
+  rememberMe.value = !rememberMe.value
+}
 </script>
 
 <style lang="scss" scoped>
@@ -274,10 +278,15 @@ function validateTenant() {
 
 .login-page :deep(.is-checked .wd-checkbox__shape),
 .login-page :deep(.wd-checkbox__shape.is-checked) {
-  border-color: #2f7dff;
-  background: #2f7dff;
+  border-color: #2f7dff !important;
+  background: #ffffff !important;
 }
 
+/* 修改选中图标颜色 */
+.login-page :deep(.is-checked .wd-checkbox__shape .wd-checkbox__check),
+.login-page :deep(.wd-checkbox__shape.is-checked .wd-checkbox__check) {
+  color: #2f7dff !important;
+}
 .auth-visual {
   position: relative;
   z-index: 0;
@@ -562,7 +571,7 @@ function validateTenant() {
 .login-options {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   min-height: 44rpx;
   margin: 2rpx 0 34rpx;
 }
@@ -570,15 +579,28 @@ function validateTenant() {
 .remember-row {
   display: flex;
   align-items: center;
-  gap: 10rpx;
+  gap: 14rpx;
   min-width: 0;
-  color: #8090aa;
+  color: #64748b;
   font-size: 26rpx;
+  font-weight: 500;
   line-height: 1;
+  cursor: pointer;
+}
+
+// 移除外层胶囊边框，更清爽，弱化视觉
+.remember-toggle {
+  min-height: auto;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
 .remember-row :deep(.wd-checkbox) {
   margin: 0;
+  // 放开指针事件，点击复选框本身也能触发勾选
+  pointer-events: auto;
 }
 
 .remember-row :deep(.wd-checkbox__label) {
@@ -586,9 +608,9 @@ function validateTenant() {
 }
 
 .remember-row :deep(.wd-checkbox__shape) {
-  width: 28rpx;
-  height: 28rpx;
-  border-radius: 6rpx;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 8rpx;
 }
 
 .forgot-link {

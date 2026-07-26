@@ -17,6 +17,23 @@
   "js/ts.tsdk.path": "node_modules/typescript/lib",
   "js/ts.tsdk.promptToUseWorkspaceVersion": true,
 
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/.idea/**": true,
+    "**/.cursor/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/docs/base/assets/**": true,
+    "**/docs/gif/assets/**": true
+  },
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/docs/base/assets": true,
+    "**/docs/gif/assets": true
+  },
+
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {

@@ -17,7 +17,9 @@
           <wd-icon v-if="quickKeyword" name="close" size="28rpx" color="#9aa9bd" @click="clearQuickSearch" />
         </view>
         <view class="person-filter-btn" @click="openSearch">
-          <wd-icon name="filter" size="30rpx" color="#475569" />
+          <view class="person-filter-icon">
+            <wd-icon name="filter" size="30rpx" color="#475569" />
+          </view>
           <text>筛选</text>
           <view v-if="activeSearchCount" class="filter-count person-filter-count">
             {{ activeSearchCount }}
@@ -59,8 +61,9 @@
           :key="getItemId(item) || item.recordId || item.customerNumber"
           class="record-card"
           :class="{ 'person-card': isModernModule }"
+          @click="tryOpenDetail(item)"
         >
-          <view class="record-head" @click="tryOpenDetail(item)">
+          <view class="record-head">
             <view v-if="isModernModule" class="person-profile">
               <view class="person-avatar" :class="{ 'person-avatar--package': isPackageModule }">
                 <view v-if="isPackageModule" class="package-mark package-mark--avatar">
@@ -89,7 +92,7 @@
             </wd-tag>
           </view>
 
-          <view class="record-body" :class="{ 'person-body': isModernModule }" @click="tryOpenDetail(item)">
+          <view class="record-body" :class="{ 'person-body': isModernModule }">
             <view
               v-for="key in getSecondaryKeys(item)"
               :key="key"
@@ -111,47 +114,26 @@
               :src="getImageUrl(url)"
               mode="aspectFill"
               class="record-image"
-              @click="previewImage(item.imageUrls, url)"
+              @click.stop="previewImage(item.imageUrls, url)"
             />
           </scroll-view>
 
-          <view v-if="isModernModule && config.remove" class="person-card-actions">
+          <view v-if="isModernModule && config.remove && !showRecordActions" class="person-card-actions">
             <view class="person-delete-button" @click.stop="removeItem(item)">
               删除
             </view>
           </view>
 
-          <view v-if="!isModernModule" class="record-actions">
-            <!-- 分发记录模块：查看分发明细 -->
-            <template v-if="config.key === 'assignmentTree'">
-              <wd-button size="small" type="primary" plain @click="openAssignmentDetail(item)">
-                <wd-icon name="list" size="24rpx" color="#2f7dff" custom-class="button-icon" />
-                查看明细
-              </wd-button>
-            </template>
-            <!-- 其他模块原有操作按钮 -->
-            <template v-else>
-              <wd-button v-if="canOpenDetail(item)" size="small" plain @click="openDetail(item)">
-                <wd-icon name="search-line" size="24rpx" color="#475569" custom-class="button-icon" />
-                详情
-              </wd-button>
-              <wd-button v-if="canEdit" size="small" type="success" plain @click="openForm(item)">
-                <wd-icon name="edit" size="24rpx" color="#16a34a" custom-class="button-icon" />
-                编辑
-              </wd-button>
-              <wd-button v-if="config.claim && item.assignmentStatus === '1'" size="small" type="primary" plain @click="claimRecord(item)">
-                <wd-icon name="check-circle" size="24rpx" color="#2f7dff" custom-class="button-icon" />
-                领取
-              </wd-button>
-              <wd-button v-if="config.uploadImages && getItemId(item)" size="small" type="info" plain @click="uploadImages(item)">
-                <wd-icon name="arrow-right" size="24rpx" color="#0891b2" custom-class="button-icon" />
-                上传图片
-              </wd-button>
-              <wd-button v-if="config.remove" size="small" plain @click="removeItem(item)">
-                <wd-icon name="delete" size="24rpx" color="#dc2626" custom-class="button-icon" />
-                删除
-              </wd-button>
-            </template>
+          <view v-if="showRecordActions" class="record-actions" :class="{ 'modern-record-actions': isModernModule }">
+            <view v-if="config.claim && item.assignmentStatus === '1'" class="person-delete-button record-action-button" @click.stop="claimRecord(item)">
+              领取
+            </view>
+            <view v-if="config.uploadImages && getItemId(item)" class="person-delete-button record-action-button" @click.stop="uploadImages(item)">
+              上传图片
+            </view>
+            <view v-if="config.remove" class="person-delete-button record-action-button" @click.stop="removeItem(item)">
+              删除
+            </view>
           </view>
         </view>
       </view>
@@ -203,7 +185,7 @@
       </view>
     </wd-popup>
 
-    <wd-fab v-if="config.canCreate" position="right-bottom" type="primary" :expandable="false" @click="openCreate" />
+    <wd-fab v-if="config.canCreate && !searchVisible" position="right-bottom" type="primary" :expandable="false" @click="openCreate" />
 
     <wd-popup v-model="timeoutConfigVisible" position="bottom" custom-style="border-radius: 24rpx 24rpx 0 0;">
       <view class="config-panel">
@@ -222,13 +204,17 @@
           </view>
         </view>
         <view class="config-actions">
-          <wd-button class="flex-1" plain @click="timeoutConfigVisible = false">
-            <wd-icon name="close" size="26rpx" color="#475569" custom-class="button-icon" />
-            取消
+          <wd-button class="action-button flex-1" plain @click="timeoutConfigVisible = false">
+            <view class="action-button-inner">
+              <wd-icon name="close" size="26rpx" color="#475569" />
+              <text class="action-button-text">取消</text>
+            </view>
           </wd-button>
-          <wd-button class="flex-1" type="primary" :loading="timeoutSaving" @click="saveTimeoutConfig">
-            <wd-icon name="check-circle" size="26rpx" color="#fff" custom-class="button-icon" />
-            保存
+          <wd-button class="action-button action-button--next flex-1" type="primary" :loading="timeoutSaving" @click="saveTimeoutConfig">
+            <view class="action-button-inner">
+              <wd-icon name="check-circle" size="26rpx" color="#fff" />
+              <text class="action-button-text">保存</text>
+            </view>
           </wd-button>
         </view>
       </view>
@@ -247,7 +233,14 @@
           </view>
           <wd-icon name="close" size="34rpx" color="#64748b" @click="searchVisible = false" />
         </view>
-        <view v-for="field in config.searchFields" :key="field.key" class="search-item" :class="{ 'person-search-item': isModernModule }">
+        <view
+          v-for="field in config.searchFields"
+          :key="field.key"
+          class="search-item"
+          :class="{
+            'person-search-item': isModernModule,
+          }"
+        >
           <view class="search-label">
             {{ field.label }}
           </view>
@@ -262,13 +255,17 @@
           <wd-input v-else v-model="searchForm[field.key]" :placeholder="`请输入${field.label}`" clearable />
         </view>
         <view class="search-actions">
-          <wd-button class="flex-1" variant="plain" @click="resetSearch">
-            <wd-icon name="close" size="26rpx" color="#475569" custom-class="button-icon" />
-            重置
+          <wd-button class="action-button flex-1" variant="plain" @click="resetSearch">
+            <view class="action-button-inner">
+              <wd-icon name="close" size="26rpx" color="#475569" />
+              <text class="action-button-text">重置</text>
+            </view>
           </wd-button>
-          <wd-button class="flex-1" type="primary" @click="submitSearch">
-            <wd-icon name="search-line" size="26rpx" color="#fff" custom-class="button-icon" />
-            搜索
+          <wd-button class="action-button action-button--next flex-1" type="primary" @click="submitSearch">
+            <view class="action-button-inner">
+              <wd-icon name="search-line" size="26rpx" color="#fff" />
+              <text class="action-button-text">搜索</text>
+            </view>
           </wd-button>
         </view>
       </view>
@@ -320,8 +317,9 @@ const currentChildList = ref<any[]>([])
 
 const canEdit = computed(() => !config.value.readonly && !!config.value.update)
 const isTimeoutModule = computed(() => config.value.key === 'timeoutReminder')
-const isModernModule = computed(() => ['outboundPersonnel', 'bizPackage', 'customerInfo', 'storeList', 'storeInfo'].includes(config.value.key))
+const isModernModule = computed(() => ['outboundPersonnel', 'outboundGrid', 'bizPackage', 'customerInfo', 'storeList', 'storeInfo', 'outboundRecord', 'assignmentTree'].includes(config.value.key))
 const isPackageModule = computed(() => config.value.key === 'bizPackage')
+const showRecordActions = computed(() => config.value.key === 'outboundRecord')
 const activeSearchCount = computed(() => Object.values(queryParams.value).filter(value => value !== undefined && value !== '').length)
 const quickSearchPlaceholder = computed(() => {
   const labels = config.value.searchFields
@@ -369,7 +367,7 @@ function openSearch() {
 
 function submitSearch() {
   queryParams.value = { ...searchForm }
-  quickKeyword.value = searchForm.personName || searchForm.phone || searchForm.userName || ''
+  quickKeyword.value = getQuickSearchDisplayValue(searchForm)
   searchVisible.value = false
   reload()
 }
@@ -419,6 +417,10 @@ function openDetail(item: any) {
 }
 
 function tryOpenDetail(item: any) {
+  if (config.value.key === 'assignmentTree') {
+    openAssignmentDetail(item)
+    return
+  }
   if (canOpenDetail(item)) {
     openDetail(item)
   }
@@ -483,6 +485,10 @@ function getFieldLabel(key: string) {
     roleName: '角色',
     businessType: '业务类型',
     grid: '网格',
+    gridCode: '网格编码',
+    gridName: '网格名称',
+    sortOrder: '显示排序',
+    remark: '备注',
     phone: '联系电话',
     userName: '登录账号',
     personName: '人员姓名',
@@ -504,6 +510,19 @@ function getSecondaryKeys(item: Record<string, any>) {
     return config.value.secondaryKeys
   }
   return config.value.secondaryKeys.filter(key => key !== 'userName' || !item.personName)
+}
+
+function getQuickSearchDisplayValue(formData: Record<string, any>) {
+  const keys = [
+    config.value.primaryKey,
+    'personName',
+    'gridName',
+    'gridCode',
+    'phone',
+    'userName',
+  ]
+  const matched = keys.find(key => formData[key])
+  return matched ? formData[matched] : ''
 }
 
 function isWidePersonField(key: string) {
@@ -532,6 +551,7 @@ function getFieldIcon(key: string) {
     followStatus: 'edit',
     sortOrder: 'list',
     gridCode: 'location',
+    gridName: 'location',
     remark: 'edit',
     overdueDays: 'time',
     assignedPersonName: 'user',
@@ -696,13 +716,11 @@ onMounted(async () => {
 .list-tools {
   display: flex;
   align-items: center;
-  gap: 16rpx;
   padding-right: 24rpx;
   background: #fff;
 }
 
 .person-tools {
-  gap: 18rpx;
   padding: 20rpx 24rpx;
   background: #eef5ff;
 }
@@ -710,15 +728,20 @@ onMounted(async () => {
 .person-search-box {
   display: flex;
   align-items: center;
-  gap: 14rpx;
   min-width: 0;
   flex: 1;
   height: 80rpx;
   padding: 0 24rpx;
-  border: 1rpx solid #e5edf8;
+  border: 0;
   border-radius: 18rpx;
   background: #fff;
-  box-shadow: 0 10rpx 24rpx rgba(15, 46, 92, 0.04);
+  box-shadow:
+    0 0 0 1px #e5edf8,
+    0 10rpx 24rpx rgba(15, 46, 92, 0.04);
+}
+
+.person-search-box > :first-child {
+  margin-right: 14rpx;
 }
 
 .person-search-input {
@@ -727,6 +750,11 @@ onMounted(async () => {
   height: 80rpx;
   color: #0f172a;
   font-size: 27rpx;
+  line-height: 80rpx;
+}
+
+.person-search-box + .person-filter-btn {
+  margin-left: 18rpx;
 }
 
 :deep(.person-search-placeholder),
@@ -739,17 +767,23 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10rpx;
-  width: 124rpx;
+  width: 148rpx;
   height: 80rpx;
   flex-shrink: 0;
-  border: 1rpx solid #e5edf8;
+  border: 1rpx solid #d3dfef;
   border-radius: 18rpx;
   color: #0f172a;
   background: #fff;
-  box-shadow: 0 10rpx 24rpx rgba(15, 46, 92, 0.04);
+  box-shadow: 0 8rpx 20rpx rgba(15, 46, 92, 0.04);
   font-size: 28rpx;
   font-weight: 650;
+}
+
+.person-filter-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 18rpx;
 }
 
 .person-filter-count {
@@ -761,7 +795,6 @@ onMounted(async () => {
 .filter-entry {
   display: flex;
   align-items: center;
-  gap: 12rpx;
   min-width: 0;
   flex: 1;
   height: 72rpx;
@@ -769,6 +802,10 @@ onMounted(async () => {
   border: 1rpx solid #dbe8ff;
   border-radius: 18rpx;
   background: #f8fbff;
+}
+
+.filter-entry > :first-child {
+  margin-right: 12rpx;
 }
 
 .filter-title {
@@ -794,6 +831,15 @@ onMounted(async () => {
   font-size: 22rpx;
 }
 
+.list-tools :deep(.wd-button) {
+  border: 1rpx solid #cbd8e8;
+  box-shadow: none;
+}
+
+.list-tools :deep(.wd-button.is-primary) {
+  border-color: #2f7dff;
+}
+
 .record-card {
   position: relative;
   margin-bottom: 20rpx;
@@ -816,7 +862,6 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
 }
 
 .record-title {
@@ -826,6 +871,7 @@ onMounted(async () => {
   color: #0b2b5c;
   font-size: 32rpx;
   font-weight: 700;
+  line-height: 44rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -835,7 +881,6 @@ onMounted(async () => {
   align-items: center;
   min-width: 0;
   flex: 1;
-  gap: 18rpx;
 }
 
 .person-avatar {
@@ -847,6 +892,7 @@ onMounted(async () => {
   flex-shrink: 0;
   border-radius: 50%;
   background: #eaf2ff;
+  margin-right: 18rpx;
 }
 
 .person-avatar--package {
@@ -905,8 +951,11 @@ onMounted(async () => {
 .person-title-line {
   display: flex;
   align-items: center;
-  gap: 18rpx;
   min-width: 0;
+}
+
+.person-title-line > :first-child {
+  margin-right: 18rpx;
 }
 
 .person-name {
@@ -914,6 +963,7 @@ onMounted(async () => {
   color: #071d3a;
   font-size: 34rpx;
   font-weight: 800;
+  line-height: 48rpx;
 }
 
 .person-account {
@@ -927,30 +977,30 @@ onMounted(async () => {
 
 .record-body {
   display: grid;
-  gap: 10rpx;
   margin-top: 18rpx;
 }
 
 .person-body {
   display: grid;
-  gap: 10rpx;
   margin-top: 20rpx;
   padding-left: 94rpx;
 }
 
+.record-line + .record-line {
+  margin-top: 10rpx;
+}
+
 .record-line {
   display: flex;
-  gap: 16rpx;
   color: #4b5563;
   font-size: 26rpx;
-  line-height: 1.5;
+  line-height: 38rpx;
 }
 
 .person-line {
   display: grid;
-  grid-template-columns: 34rpx 170rpx minmax(0, 1fr);
+  grid-template-columns: 44rpx 180rpx minmax(0, 1fr);
   align-items: center;
-  gap: 10rpx;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -965,6 +1015,7 @@ onMounted(async () => {
   width: 150rpx;
   flex-shrink: 0;
   color: #94a3b8;
+  margin-right: 16rpx;
 }
 
 .person-line .record-label {
@@ -997,15 +1048,40 @@ onMounted(async () => {
   margin-top: 20rpx;
 }
 
+.record-actions :deep(.wd-button) {
+  margin-left: 12rpx;
+  margin-bottom: 10rpx;
+  border: 1rpx solid #cbd8e8;
+  box-shadow: none;
+}
+
+.record-actions :deep(.wd-button.is-primary) {
+  border-color: #2f7dff;
+}
+
+.record-actions :deep(.wd-button.is-success) {
+  border-color: #16a34a;
+}
+
+.record-actions :deep(.wd-button.is-info) {
+  border-color: #0891b2;
+}
+
+.record-action-button {
+  margin-left: 12rpx;
+  margin-bottom: 10rpx;
+}
+
 :deep(.person-status-tag) {
-  height: 40rpx;
-  padding: 0 16rpx;
-  border: 0;
+  height: 34rpx;
+  padding: 0 12rpx;
+  border: 1rpx solid #bfe8cc;
   border-radius: 999rpx;
   background: #e8f8ee;
   color: #16a34a;
-  font-size: 22rpx;
+  font-size: 20rpx;
   font-weight: 700;
+  line-height: 32rpx;
 }
 
 .person-card-actions {
@@ -1022,6 +1098,7 @@ onMounted(async () => {
   min-width: 56rpx;
   height: 50rpx;
   padding: 0 15rpx;
+  border: 1rpx solid #2f7dff;
   border-radius: 8rpx;
   color: #fff;
   background: #409eff;
@@ -1139,10 +1216,10 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24rpx;
   min-height: 84rpx;
   color: #0b2b5c;
   font-size: 28rpx;
+  line-height: 40rpx;
 }
 
 .align-start {
@@ -1152,18 +1229,31 @@ onMounted(async () => {
 .config-input {
   display: flex;
   align-items: center;
-  gap: 12rpx;
 }
 
 .config-unit {
+  margin-left: 12rpx;
   color: #64748b;
   font-size: 24rpx;
+  line-height: 34rpx;
 }
 
 .config-actions {
   display: flex;
-  gap: 20rpx;
   margin-top: 28rpx;
+}
+
+.config-actions :deep(.wd-button) {
+  border: 1rpx solid #cbd8e8;
+  box-shadow: none;
+}
+
+.config-actions :deep(.wd-button.is-primary) {
+  border-color: #2f7dff;
+}
+
+.config-actions .action-button--next {
+  margin-left: 28rpx;
 }
 
 .search-panel {
@@ -1175,7 +1265,8 @@ onMounted(async () => {
 
 .person-search-panel {
   max-height: 82vh;
-  padding: 30rpx 28rpx 40rpx;
+  padding: 30rpx 28rpx calc(48rpx + constant(safe-area-inset-bottom));
+  padding: 30rpx 28rpx calc(48rpx + env(safe-area-inset-bottom));
   border-radius: 28rpx 28rpx 0 0;
   background: #f7faff;
 }
@@ -1184,7 +1275,6 @@ onMounted(async () => {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20rpx;
   margin-bottom: 24rpx;
 }
 
@@ -1197,23 +1287,27 @@ onMounted(async () => {
   color: #0b2b5c;
   font-size: 32rpx;
   font-weight: 800;
+  line-height: 44rpx;
 }
 
 .person-search-panel .search-title {
   color: #071d3a;
   font-size: 34rpx;
   font-weight: 850;
+  line-height: 48rpx;
 }
 
 .search-subtitle {
   margin-top: 6rpx;
   color: #64748b;
   font-size: 23rpx;
+  line-height: 32rpx;
 }
 
 .person-search-panel .search-subtitle {
   color: #7b8da5;
   font-size: 24rpx;
+  line-height: 34rpx;
 }
 
 .search-item {
@@ -1223,7 +1317,7 @@ onMounted(async () => {
 .person-search-item {
   margin-bottom: 18rpx;
   padding: 20rpx;
-  border: 1rpx solid #e5edf8;
+  border: 1rpx solid #d9e4f2;
   border-radius: 18rpx;
   background: #fff;
   box-shadow: 0 8rpx 20rpx rgba(15, 46, 92, 0.035);
@@ -1234,6 +1328,7 @@ onMounted(async () => {
   color: #334155;
   font-size: 25rpx;
   font-weight: 650;
+  line-height: 36rpx;
 }
 
 .person-search-item .search-label {
@@ -1241,6 +1336,7 @@ onMounted(async () => {
   color: #344256;
   font-size: 25rpx;
   font-weight: 750;
+  line-height: 36rpx;
 }
 
 .person-search-item :deep(.wd-input) {
@@ -1255,49 +1351,121 @@ onMounted(async () => {
   font-size: 27rpx;
 }
 
+// ========== 【修复radio按钮模糊 + 布局】替换原有person-radio-group样式 ==========
 .person-radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
+  gap: 16rpx; // 使用gap统一间距，代替margin，避免重叠错乱
 }
 
 .person-radio-group :deep(.wd-radio) {
-  margin-right: 0;
-  margin-bottom: 0;
+  margin: 0 !important; // 清除原有margin，防止挤压重叠
+  box-sizing: border-box;
+  // 消除模糊核心：禁止transform缩放，防止半像素
+  transform: translateZ(0) !important;
+  will-change: transform;
+}
+
+.person-radio-group :deep(.wd-radio.is-button) {
+  border: 1rpx solid #ccd9e8;
+  background: #f7faff;
+  box-shadow: none;
+  transform: none !important;
+  // 边框清晰优化：整数尺寸、避免小数rpx
+  border-radius: 16rpx;
+}
+
+.person-radio-group :deep(.wd-radio.is-button.is-checked) {
+  border-color: #2f7dff;
+  background: #eef6ff;
 }
 
 .person-radio-group :deep(.wd-radio__label) {
   min-width: 104rpx;
-  height: 58rpx;
-  padding: 0 24rpx;
-  border-radius: 999rpx;
+  height: 60rpx; // 微调高度，避免文字挤压
+  padding: 0 26rpx;
+  border-radius: 16rpx;
   font-size: 25rpx;
+  line-height: 60rpx;
+  text-align: center;
+}
+
+// ========== 【修复弹窗表单项上下间距】 ==========
+.person-search-item {
+  margin-bottom: 24rpx !important; // 加大表单项垂直间距，解决上下拥挤
+  padding: 20rpx;
+  border: 1rpx solid #d9e4f2;
+  border-radius: 18rpx;
+  background: #fff;
+  box-shadow: 0 8rpx 20rpx rgba(15, 46, 92, 0.035);
+}
+
+.person-search-item .search-label {
+  margin-bottom: 14rpx !important; // 标签和输入框间距拉开
+  color: #344256;
+  font-size: 25rpx;
+  font-weight: 750;
+  line-height: 36rpx;
+}
+
+// ========== 【底部操作按钮强化边框清晰度】 ==========
+.person-search-panel .search-actions :deep(.wd-button) {
+  min-width: 0;
+  height: 84rpx;
+  border: 1rpx solid #ccd9e8 !important;
+  border-radius: 18rpx;
+  box-shadow: none;
+  font-size: 28rpx;
+  font-weight: 750;
+  transform: translateZ(0) !important;
+}
+
+.person-search-panel .search-actions :deep(.wd-button.is-primary) {
+  border-color: #2f7dff !important;
 }
 
 .search-actions {
   display: flex;
-  gap: 20rpx;
-  margin-top: 30rpx;
+  margin-top: 36rpx;
 }
 
 .person-search-panel .search-actions {
-  position: sticky;
-  bottom: 0;
-  gap: 18rpx;
-  margin: 26rpx -2rpx 0;
-  padding-top: 18rpx;
+  margin: 32rpx -2rpx 0;
+  padding: 4rpx 6rpx 12rpx;
   background: #f7faff;
 }
 
-.person-search-panel .search-actions :deep(.wd-button) {
-  height: 76rpx;
-  border-radius: 16rpx;
-  font-size: 28rpx;
-  font-weight: 750;
+.search-actions .action-button--next {
+  margin-left: 34rpx;
 }
 
-:deep(.button-icon) {
-  margin-right: 6rpx;
-  vertical-align: -3rpx;
+.person-search-panel .search-actions :deep(.wd-button) {
+  min-width: 0;
+  height: 84rpx;
+  border: 1rpx solid #ccd9e8;
+  border-radius: 18rpx;
+  box-shadow: none;
+  font-size: 28rpx;
+  font-weight: 750;
+  transform: none;
+}
+
+.person-search-panel .search-actions :deep(.wd-button::after) {
+  display: none;
+}
+
+.person-search-panel .search-actions :deep(.wd-button.is-primary) {
+  border-color: #2f7dff;
+}
+
+.action-button-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-button-text {
+  margin-left: 18rpx;
+  line-height: 40rpx;
 }
 </style>

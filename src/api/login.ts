@@ -102,7 +102,7 @@ export async function login(data: AuthLoginReqVO) {
   const res = await http.post<any>('/login', payload, undefined, { isToken: false, repeatSubmit: false } as any, { original: true })
   return {
     token: res.token,
-    expiresIn: 15 * 24 * 60 * 60,
+    expiresIn: Number(res.expiresIn ?? 24 * 60 * 60),
   } as IAuthLoginRes
 }
 

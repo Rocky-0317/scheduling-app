@@ -261,6 +261,19 @@ export default defineConfig(({ command, mode }) => {
       host: '0.0.0.0',
       hmr: true,
       port: Number.parseInt(VITE_APP_PORT, 10),
+      watch: {
+        ignored: [
+          '**/.git/**',
+          '**/.idea/**',
+          '**/.vscode/**',
+          '**/.cursor/**',
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/docs/base/assets/**',
+          '**/docs/gif/assets/**',
+          '**/*.log',
+        ],
+      },
       // 仅 H5 端生效，其他端不生效（其他端走build，不走devServer)
       proxy: JSON.parse(VITE_APP_PROXY_ENABLE)
         ? {

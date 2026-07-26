@@ -7,7 +7,7 @@
         <view class="overview">
           <view class="overview-head">
             <view class="overview-main">
-              <wd-img src="/static/logo.svg" width="72rpx" height="72rpx" mode="aspectFit" />
+              <wd-img class="overview-logo" src="/static/logo.svg" width="72rpx" height="72rpx" mode="aspectFit" />
               <view class="overview-copy">
                 <view class="overview-label">
                   今日调度概览
@@ -18,7 +18,9 @@
               </view>
             </view>
             <view class="overview-status">
-              <wd-icon name="check-circle" size="28rpx" color="#2f7dff" />
+              <view class="overview-status-icon">
+                <wd-icon name="check-circle" size="28rpx" color="#2f7dff" />
+              </view>
               <text>{{ summary.runStatus || '正常' }}</text>
             </view>
           </view>
@@ -50,7 +52,9 @@
                 {{ item.desc }}
               </view>
             </view>
-            <wd-icon name="arrow-right" size="30rpx" color="#94a3b8" />
+            <view class="entry-arrow">
+              <wd-icon name="arrow-right" size="30rpx" color="#94a3b8" />
+            </view>
           </view>
         </view>
 
@@ -139,25 +143,30 @@ onMounted(loadSummary)
 
 .overview-head {
   justify-content: space-between;
-  gap: 20rpx;
 }
 
 .overview-main {
   min-width: 0;
   flex: 1;
   justify-content: flex-start;
-  gap: 18rpx;
+}
+
+.overview-logo {
+  flex-shrink: 0;
+  margin-right: 18rpx;
 }
 
 .overview-copy {
   min-width: 0;
   flex: 1;
+  padding-right: 20rpx;
 }
 
 .overview-label {
   color: #2f7dff;
   font-size: 24rpx;
   font-weight: 600;
+  line-height: 34rpx;
 }
 
 .overview-title {
@@ -165,19 +174,19 @@ onMounted(loadSummary)
   color: #0b2b5c;
   font-size: 34rpx;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 46rpx;
 }
 
 .overview-date {
   margin-top: 18rpx;
   color: #64748b;
   font-size: 24rpx;
+  line-height: 34rpx;
 }
 
 .overview-status {
   display: flex;
   align-items: center;
-  gap: 8rpx;
   flex-shrink: 0;
   padding: 8rpx 12rpx;
   border-radius: 8rpx;
@@ -185,6 +194,14 @@ onMounted(loadSummary)
   background: #eef5ff;
   font-size: 22rpx;
   font-weight: 650;
+  line-height: 30rpx;
+}
+
+.overview-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8rpx;
 }
 
 .entry-item {
@@ -204,6 +221,7 @@ onMounted(loadSummary)
 .entry-desc {
   color: #64748b;
   font-size: 24rpx;
+  line-height: 34rpx;
 }
 
 .section-head {
@@ -217,41 +235,57 @@ onMounted(loadSummary)
   color: #0b2b5c;
   font-size: 30rpx;
   font-weight: 800;
+  line-height: 42rpx;
 }
 
 .section-subtitle {
   margin-top: 6rpx;
   color: #94a3b8;
   font-size: 23rpx;
+  line-height: 32rpx;
 }
 
 .entry-list {
   display: grid;
-  gap: 16rpx;
+}
+
+.entry-item + .entry-item {
+  margin-top: 16rpx;
 }
 
 .entry-item {
   display: flex;
+  min-height: 120rpx;
   align-items: center;
-  gap: 18rpx;
+  box-sizing: border-box;
   padding: 24rpx;
 }
 
 .entry-icon {
   width: 72rpx;
   height: 72rpx;
+  margin-right: 30rpx;
   border-radius: 18rpx;
 }
 
 .entry-copy {
   min-width: 0;
   flex: 1;
+  padding-right: 8rpx;
+}
+
+.entry-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 12rpx;
 }
 
 .entry-title {
   color: #0b2b5c;
   font-size: 30rpx;
   font-weight: 700;
+  line-height: 42rpx;
 }
 
 .entry-desc {

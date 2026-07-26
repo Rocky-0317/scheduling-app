@@ -501,7 +501,7 @@ onMounted(async () => {
 }
 
 :deep(.button-icon) {
-  margin-right: 8rpx;
+  margin-right: 12rpx;
   vertical-align: -3rpx;
 }
 

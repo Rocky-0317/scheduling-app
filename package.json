@@ -45,6 +45,7 @@
     "dev:test": "uni --mode test",
     "dev:prod": "uni --mode production",
     "dev:h5": "uni",
+    "dev:h5:codex": "cross-env SKIP_OPEN_DEVTOOLS=true uni",
     "dev:h5:test": "uni --mode test",
     "dev:h5:prod": "uni --mode production",
     "dev:h5:ssr": "uni --ssr",

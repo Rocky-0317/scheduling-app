@@ -80,7 +80,12 @@
                 {{ item.desc }}
               </view>
             </view>
-            <wd-icon name="arrow-right" size="28rpx" color="#9ca3af" />
+            <wd-icon
+              class="category-arrow"
+              name="arrow-right"
+              size="28rpx"
+              color="#9ca3af"
+            />
           </view>
         </view>
       </view>
@@ -340,6 +345,10 @@ onShow(() => {
   box-shadow: 0 14rpx 38rpx rgba(47, 125, 255, 0.08);
 }
 
+.category-arrow {
+  flex-shrink: 0;
+}
+
 .hero-panel {
   position: relative;
   min-height: 330rpx;
@@ -387,13 +396,17 @@ onShow(() => {
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 8rpx;
   padding: 10rpx 16rpx;
   border-radius: 999rpx;
   color: #0b2b5c;
   background: rgba(255, 255, 255, 0.82);
   font-size: 23rpx;
   font-weight: 750;
+}
+
+.hero-status :deep(.wd-icon) {
+  flex-shrink: 0;
+  margin-right: 8rpx;
 }
 
 .hero-visual {
@@ -526,9 +539,9 @@ onShow(() => {
 .category-card {
   display: flex;
   align-items: center;
-  gap: 18rpx;
   min-height: 118rpx;
   padding: 20rpx;
+  box-sizing: border-box;
   border: 1rpx solid #edf0f2;
   border-radius: 24rpx;
   background: #fbfdff;
@@ -541,10 +554,10 @@ onShow(() => {
   width: 76rpx;
   height: 76rpx;
   flex-shrink: 0;
+  margin-right: 22rpx;
   border-radius: 24rpx;
   background: #eef5ff;
 }
-
 .store-mark {
   position: relative;
   width: 44rpx;
@@ -601,21 +614,24 @@ onShow(() => {
 }
 
 .category-copy {
-  min-width: 0;
   flex: 1;
+  min-width: 0;
+  margin-right: 16rpx;
 }
 
 .category-title {
   color: #0b2b5c;
   font-size: 30rpx;
   font-weight: 850;
+  line-height: 42rpx;
 }
 
 .category-desc {
   overflow: hidden;
-  margin-top: 7rpx;
+  margin-top: 6rpx;
   color: #7a828d;
   font-size: 23rpx;
+  line-height: 32rpx;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

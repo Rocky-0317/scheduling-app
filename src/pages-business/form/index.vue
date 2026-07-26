@@ -97,7 +97,15 @@
           门店推广二维码
         </view>
         <view class="qr-box">
-          <image v-if="qrCodeUrl" :src="qrCodeUrl" mode="aspectFit" class="qr-img" />
+          <view v-if="qrModules.length" class="qr-grid">
+            <view
+              v-for="(isDark, index) in qrModules"
+              :key="index"
+              class="qr-cell"
+              :class="{ 'qr-cell--dark': isDark }"
+              :style="{ width: qrCellSize, height: qrCellSize }"
+            />
+          </view>
           <view v-else class="qr-loading">
             二维码生成中...
           </view>
@@ -135,6 +143,7 @@ import { createFormSchema } from '@/utils/wot'
 import type { BusinessField } from '@/pages-business/config'
 import { businessApi } from '@/api/business'
 import { getModuleConfig } from '@/pages-business/config'
+import '@/utils/text-encoder-polyfill'
 import QRCode from 'qrcode'
 
 const props = defineProps<{
@@ -161,7 +170,8 @@ const roleOptions = ref<any[]>([])
 const businessTypeOptions = ref<Array<{ label: string, value: string }>>([])
 const gridOptions = ref<Array<{ label: string, value: string }>>([])
 const qrDialogVisible = ref(false)
-const qrCodeUrl = ref('')
+const qrModules = ref<boolean[]>([])
+const qrSize = ref(0)
 
 const config = computed(() => getModuleConfig(props.module))
 const isView = computed(() => props.mode === 'view' || config.value.readonly)
@@ -177,6 +187,7 @@ const shopH5Url = computed(() => {
   const h5Base = import.meta.env.VITE_H5_WEB_BASE
   return `${h5Base}/h5/package-shop.html?shopId=${shopId}`
 })
+const qrCellSize = computed(() => qrSize.value ? `${460 / qrSize.value}rpx` : '0rpx')
 
 const selectedRole = computed(() => roleOptions.value.find(item => String(item.value) === String(formData.value.roleId)))
 const needShowGridType = computed(() => {
@@ -429,14 +440,34 @@ async function loadGridOptions(force = false) {
 // 生成二维码
 async function generateQrCode() {
   try {
-    qrCodeUrl.value = ''
+    qrModules.value = []
+    qrSize.value = 0
     const url = shopH5Url.value
-    // 生成base64格式二维码，尺寸和web端保持一致
-    qrCodeUrl.value = await QRCode.toDataURL(url, {
-      width: 460,
-      margin: 2,
+    // 直接渲染二维码矩阵，兼容缺少 DOM canvas 的 App 真机环境。
+    const margin = 2
+    const qr = QRCode.create(url, {
       errorCorrectionLevel: 'M',
     })
+    const size = qr.modules.size
+    const outputSize = size + margin * 2
+    const modules: boolean[] = []
+
+    for (let row = 0; row < outputSize; row++) {
+      for (let col = 0; col < outputSize; col++) {
+        const sourceRow = row - margin
+        const sourceCol = col - margin
+        modules.push(
+          sourceRow >= 0
+          && sourceRow < size
+          && sourceCol >= 0
+          && sourceCol < size
+          && !!qr.modules.get(sourceRow, sourceCol),
+        )
+      }
+    }
+
+    qrSize.value = outputSize
+    qrModules.value = modules
   } catch (err) {
     console.error('二维码生成失败', err)
     toast.error('二维码生成失败')
@@ -529,9 +560,22 @@ onMounted(async () => {
   min-height: 460rpx;
 }
 
-.qr-img {
+.qr-grid {
+  display: flex;
+  flex-wrap: wrap;
   width: 460rpx;
   height: 460rpx;
+  overflow: hidden;
+  background: #fff;
+}
+
+.qr-cell {
+  flex: none;
+  background: #fff;
+}
+
+.qr-cell--dark {
+  background: #111827;
 }
 
 .qr-loading {

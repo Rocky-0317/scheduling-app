@@ -88,10 +88,10 @@ export default defineManifestConfig({
       /* 图标配置 */
       icons: {
         android: {
-          hdpi: 'src/static/app/icons/72x72.png',
-          xhdpi: 'src/static/app/icons/96x96.png',
-          xxhdpi: 'src/static/app/icons/144x144.png',
-          xxxhdpi: 'src/static/app/icons/192x192.png',
+          hdpi: 'static/app/icons/72x72.png',
+          xhdpi: 'static/app/icons/96x96.png',
+          xxhdpi: 'static/app/icons/144x144.png',
+          xxxhdpi: 'static/app/icons/192x192.png',
         },
         ios: {
           // appstore: 'src/static/app/icons/1024x1024.png',

@@ -82,7 +82,7 @@
       <view class="login-options">
         <view class="remember-row" @click="toggleRemember">
           <wd-checkbox v-model="rememberMe" type="square" @click.stop />
-          <text>记住我</text>
+          <text class="remember-text">记住我</text>
         </view>
       </view>
       <view v-if="captchaEnabled">
@@ -579,7 +579,6 @@ function toggleRemember() {
 .remember-row {
   display: flex;
   align-items: center;
-  gap: 14rpx;
   min-width: 0;
   color: #64748b;
   font-size: 26rpx;
@@ -598,9 +597,14 @@ function toggleRemember() {
 }
 
 .remember-row :deep(.wd-checkbox) {
-  margin: 0;
+  flex-shrink: 0;
+  margin: 0 18rpx 0 0;
   // 放开指针事件，点击复选框本身也能触发勾选
   pointer-events: auto;
+}
+
+.remember-text {
+  flex-shrink: 0;
 }
 
 .remember-row :deep(.wd-checkbox__label) {

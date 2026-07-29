@@ -118,20 +118,24 @@
             />
           </scroll-view>
 
-          <view v-if="isModernModule && config.remove && !showRecordActions" class="person-card-actions">
+          <!-- 单人卡片删除按钮：增加删除权限校验 business:outboundRecord:remove -->
+          <view v-if="isModernModule && config.remove && !showRecordActions && hasPerm(['business:outboundRecord:remove'])" class="person-card-actions">
             <view class="person-delete-button" @click.stop="removeItem(item)">
               删除
             </view>
           </view>
 
           <view v-if="showRecordActions" class="record-actions" :class="{ 'modern-record-actions': isModernModule }">
-            <view v-if="config.claim && item.assignmentStatus === '1'" class="person-delete-button record-action-button" @click.stop="claimRecord(item)">
+            <!-- 领取按钮权限 和web一致 business:outboundRecord:claim -->
+            <view v-if="config.claim && item.assignmentStatus === '1' && hasPerm(['business:outboundRecord:claim'])" class="person-delete-button record-action-button" @click.stop="claimRecord(item)">
               领取
             </view>
-            <view v-if="config.uploadImages && getItemId(item)" class="person-delete-button record-action-button" @click.stop="uploadImages(item)">
+            <!-- 上传图片权限 business:outboundRecord:uploadImage -->
+            <view v-if="config.uploadImages && getItemId(item) && hasPerm(['business:outboundRecord:uploadImage'])" class="person-delete-button record-action-button" @click.stop="uploadImages(item)">
               上传图片
             </view>
-            <view v-if="config.remove" class="person-delete-button record-action-button" @click.stop="removeItem(item)">
+            <!-- 删除按钮权限 business:outboundRecord:remove -->
+            <view v-if="config.remove && hasPerm(['business:outboundRecord:remove'])" class="person-delete-button record-action-button" @click.stop="removeItem(item)">
               删除
             </view>
           </view>
@@ -185,7 +189,14 @@
       </view>
     </wd-popup>
 
-    <wd-fab v-if="config.canCreate && !searchVisible" position="right-bottom" type="primary" :expandable="false" @click="openCreate" />
+    <!-- 新增悬浮按钮：增加新增权限校验 business:outboundRecord:add -->
+    <wd-fab
+      v-if="config.canCreate && !searchVisible && hasPerm(['business:outboundRecord:add'])"
+      position="right-bottom"
+      type="primary"
+      :expandable="false"
+      @click="openCreate"
+    />
 
     <wd-popup v-model="timeoutConfigVisible" position="bottom" custom-style="border-radius: 24rpx 24rpx 0 0;">
       <view class="config-panel">
@@ -286,6 +297,8 @@ import {
 import { businessApi } from '@/api/business'
 import { getEnvBaseUrl, navigateBackPlus } from '@/utils'
 import type { BusinessModuleConfig } from '@/pages-business/config'
+// 新增：引入用户store，读取权限列表（芋道通用）
+import { useUserStore } from '@/store/user'
 
 const props = defineProps<{ module?: string }>()
 
@@ -297,6 +310,7 @@ definePage({
 })
 
 const toast = useToast()
+const userStore = useUserStore()
 const config = computed<BusinessModuleConfig>(() => getModuleConfig(props.module))
 const list = ref<any[]>([])
 const pagingRef = ref<any>()
@@ -334,6 +348,19 @@ const searchPlaceholder = computed(() => {
     .map(([key, value]) => `${getFieldLabel(key)}:${formatValue(value, key)}`)
   return conditions.length ? conditions.join(' | ') : `搜索${config.value.title}`
 })
+
+// ===================== 核心权限判断方法（对标web v-hasPermi） =====================
+/**
+ * 校验是否拥有权限，支持多个权限（满足任意一个即返回true）
+ * @param perms 权限标识数组，和web端完全一致
+ */
+function hasPerm(perms: string[]): boolean {
+  // 超级管理员通配符权限直接放行
+  if (userStore.permissions.includes('*:*:*'))
+    return true
+  // 判断是否存在任意匹配权限
+  return perms.some(p => userStore.permissions.includes(p))
+}
 
 function handleBack() {
   navigateBackPlus('/pages-business/workbench/index')

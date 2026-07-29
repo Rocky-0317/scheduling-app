@@ -3,22 +3,24 @@ import { businessApi } from '@/api/business'
 
 export type BusinessModuleKey
   = | 'outboundRecord'
-    | 'outboundPersonnel'
-    | 'outboundGrid'
-    | 'bizPackage'
-    | 'customerInfo'
-    | 'storeList'
-    | 'storeInfo'
-    | 'timeoutReminder'
-    | 'assignmentTree'
+  | 'outboundPersonnel'
+  | 'outboundGrid'
+  | 'bizPackage'
+  | 'customerInfo'
+  | 'storeList'
+  | 'storeInfo'
+  | 'timeoutReminder'
+  | 'assignmentTree'
 
 export interface BusinessField {
   key: string
   label: string
-  type?: 'text' | 'number' | 'textarea' | 'radio' | 'date' | 'picker' | 'multiPicker'
-  required?: boolean
+  type?: 'text' | 'number' | 'textarea' | 'radio' | 'date' | 'picker' | 'multiPicker'| 'imageUpload'
+  required?: boolean | ((data: Record<string, any>) => boolean)
   readonly?: boolean
   hiddenOnCreate?: boolean
+  hiddenOnView?: boolean // 新增：仅详情隐藏
+  condition?: (data: Record<string, any>) => boolean // 新增：动态显示条件
   options?: Array<{ label: string, value: string | number }>
   source?: 'role' | 'businessType' | 'grid'
 }
@@ -42,6 +44,7 @@ export interface BusinessModuleConfig {
   formFields: BusinessField[]
   readonly?: boolean
   canCreate?: boolean
+  showSearchClear?: boolean
 }
 
 export const statusOptions = [
@@ -87,13 +90,14 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     badgeKey: 'assignmentStatus',
     badgeOptions: assignmentOptions,
     canCreate: true,
+    showSearchClear: true,
     searchFields: [
       { key: 'customerNumber', label: '客户号码' },
       { key: 'packageName', label: '套餐' },
       { key: 'grid', label: '网格', type: 'picker', source: 'grid' },
       { key: 'receiver', label: '接单人' },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', options: assignmentOptions },
-      { key: 'isSuccess', label: '办理结果', type: 'radio', options: successOptions },
+      { key: 'isSuccess', label: '是否成功', type: 'radio', options: successOptions },
     ],
     formFields: [
       { key: 'businessType', label: '业务类型', type: 'picker', source: 'businessType', required: true },
@@ -107,8 +111,35 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'receiverName', label: '接单人', hiddenOnCreate: true, readonly: true },
       { key: 'orderTime', label: '接单时间', hiddenOnCreate: true, readonly: true },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', hiddenOnCreate: true, options: assignmentOptions, readonly: true },
-      { key: 'isSuccess', label: '办理结果', type: 'radio', hiddenOnCreate: true, options: successOptions, readonly: true },
-      { key: 'cardNumber', label: '办理号卡', hiddenOnCreate: true },
+      { key: 'isSuccess', label: '是否成功', type: 'radio', hiddenOnCreate: true, options: successOptions },
+      // 新增办理号卡：仅isSuccess=1、编辑模式显示，必填，对齐Web逻辑
+      {
+        key: 'cardNumber',
+        label: '办理号卡',
+        hiddenOnCreate: true,
+        // 动态显示条件：成功 且 业务类型是0/1（号码卡/终端）
+        condition: (data) => {
+          const successFlag = data.isSuccess === '1'
+          // businessType 是数组 ['0','1'] 或者单字符串 '0'/'1' 兼容两种格式
+          const typeList = Array.isArray(data.businessType) ? data.businessType : [data.businessType]
+          const matchType = typeList.some(item => ['0', '1'].includes(item))
+          return successFlag && matchType
+        },
+        // 动态必填：和显示条件完全一致，不满足则非必填
+        required: (data) => {
+          const successFlag = data.isSuccess === '1'
+          const typeList = Array.isArray(data.businessType) ? data.businessType : [data.businessType]
+          const matchType = typeList.some(item => ['0', '1'].includes(item))
+          return successFlag && matchType
+        }
+      },
+      // 凭证图片字段：移除readonly，编辑可上传
+      {
+        key: 'imageUrls',
+        label: '凭证图片',
+        hiddenOnCreate: true,
+        type: 'imageUpload'
+      },
       { key: 'followStatus', label: '跟进情况', type: 'textarea' },
       { key: 'remark', label: '备注', type: 'textarea' },
     ],
@@ -126,6 +157,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     badgeKey: 'status',
     badgeOptions: statusOptions,
     canCreate: true,
+    showSearchClear: true,
     searchFields: [
       { key: 'userName', label: '登录账号' },
       { key: 'personName', label: '人员姓名' },
@@ -156,6 +188,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     badgeKey: 'status',
     badgeOptions: statusOptions,
     canCreate: true,
+    showSearchClear: true,
     searchFields: [
       { key: 'gridCode', label: '网格编码' },
       { key: 'gridName', label: '网格名称' },
@@ -182,6 +215,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     badgeKey: 'status',
     badgeOptions: enableOptions,
     canCreate: true,
+    showSearchClear: true,
     searchFields: [
       { key: 'packageName', label: '套餐名称' },
       { key: 'packageCode', label: '套餐编码' },
@@ -204,6 +238,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     remove: businessApi.deleteCustomer,
     primaryKey: 'name',
     secondaryKeys: ['phone', 'storeUserName', 'packageName', 'address'],
+    showSearchClear: true,
     searchFields: [
       { key: 'name', label: '客户姓名' },
       { key: 'phone', label: '联系电话' },
@@ -231,6 +266,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     badgeKey: 'status',
     badgeOptions: statusOptions,
     readonly: true,
+    showSearchClear: false,
     searchFields: [
       { key: 'userName', label: '登录账号' },
       { key: 'personName', label: '门店名称' },
@@ -257,6 +293,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     badgeKey: 'status',
     badgeOptions: statusOptions,
     readonly: true,
+    showSearchClear: false,
     searchFields: [
       { key: 'personName', label: '门店名称' },
       { key: 'phone', label: '联系电话' },
@@ -277,9 +314,8 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     list: businessApi.listTimeoutReminders,
     primaryKey: 'customerNumber',
     secondaryKeys: ['packageName', 'grid', 'receiverName', 'orderTime', 'overdueDays'],
-    // badgeKey: 'assignmentStatus',
-    // badgeOptions: assignmentOptions,
     readonly: true,
+    showSearchClear: false,
     searchFields: [
       { key: 'customerNumber', label: '客户号码' },
       { key: 'packageName', label: '套餐' },
@@ -301,6 +337,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
     primaryKey: 'customerNumber',
     secondaryKeys: ['packageName', 'grid', 'businessType'],
     readonly: true,
+    showSearchClear: false,
     searchFields: [
       { key: 'businessType', label: '业务类型', type: 'picker', source: 'businessType' },
       { key: 'customerNumber', label: '客户号码' },

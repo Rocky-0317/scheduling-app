@@ -7,6 +7,7 @@ import { isMp } from '@uni-helper/uni-env'
  */
 import { useTokenStore } from '@/store/token'
 import { isPageTabbar, tabbarStore } from '@/tabbar/store'
+import { hasTokenInfo } from '@/utils/auth'
 import { getAllPages, getLastPage, HOME_PAGE, parseUrlToObj } from '@/utils/index'
 import { toLoginPage } from '@/utils/toLoginPage'
 import { EXCLUDE_LOGIN_PATH_LIST, isNeedLoginMode, LOGIN_PAGE, LOGIN_PAGE_ENABLE_IN_MP, NOT_FOUND_PAGE } from './config'
@@ -83,6 +84,10 @@ export const navigateToInterceptor = {
 
     const tokenStore = useTokenStore().updateNowTime()
     FG_LOG_ENABLE && console.log('tokenStore.hasLogin:', tokenStore.hasLogin)
+
+    if (hasTokenInfo(tokenStore.tokenInfo) && !tokenStore.hasLogin) {
+      tokenStore.clearLocalLoginState()
+    }
 
     // 不管黑白名单，登录了就直接去吧（但是当前不能是登录页）
     if (tokenStore.hasLogin) {

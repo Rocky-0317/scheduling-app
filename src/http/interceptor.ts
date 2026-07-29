@@ -2,7 +2,9 @@
 import type { CustomRequestOptions } from '@/http/types'
 import { useTokenStore, useUserStore } from '@/store'
 import { getEnvBaseUrl } from '@/utils'
+import { hasTokenInfo } from '@/utils/auth'
 import { ApiEncrypt } from '@/utils/encrypt'
+import { toLoginPage } from '@/utils/toLoginPage'
 import { stringifyQuery } from './tools/queryString'
 
 // 请求基准地址
@@ -65,6 +67,12 @@ const httpInterceptor = {
     }
     if (!isToken && token) {
       options.header.Authorization = `Bearer ${token}`
+    }
+    else if (!isToken && hasTokenInfo(tokenStore.tokenInfo)) {
+      tokenStore.clearLocalLoginState()
+      toLoginPage()
+      toLoginPage.flush()
+      return false
     }
 
     // 4. 添加租户标识

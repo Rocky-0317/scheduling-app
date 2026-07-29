@@ -1,5 +1,5 @@
 <template>
-  <view class="yd-page-container yd-page-container-paging business-workbench">
+  <view v-if="isPageReady" class="yd-page-container yd-page-container-paging business-workbench">
     <wd-navbar title="配送调度工作台" left-arrow placeholder safe-area-inset-top fixed @click-left="handleBack" />
 
     <scroll-view scroll-y class="workbench-scroll">
@@ -68,7 +68,10 @@
 import type { OutboundWorkbenchSummary } from '@/api/business'
 import { onMounted, ref } from 'vue'
 import { businessApi } from '@/api/business'
+import { useTokenStore } from '@/store'
+import { hasTokenInfo } from '@/utils/auth'
 import { navigateBackPlus } from '@/utils'
+import { toLoginPage } from '@/utils/toLoginPage'
 
 definePage({
   style: {
@@ -78,6 +81,8 @@ definePage({
 })
 
 const today = new Date().toISOString().slice(0, 10)
+const tokenStore = useTokenStore()
+const isPageReady = ref(tokenStore.updateNowTime().hasLogin)
 const summary = ref<OutboundWorkbenchSummary>({})
 
 const entries = [
@@ -91,6 +96,9 @@ const entries = [
 ]
 
 async function loadSummary() {
+  if (!ensurePageAuth()) {
+    return
+  }
   uni.showLoading({ title: '加载中' })
   try {
     const data = await businessApi.workbenchSummary({ startDate: today, endDate: today })
@@ -98,6 +106,22 @@ async function loadSummary() {
   } finally {
     uni.hideLoading()
   }
+}
+
+function ensurePageAuth() {
+  tokenStore.updateNowTime()
+  if (tokenStore.hasLogin) {
+    isPageReady.value = true
+    return true
+  }
+
+  if (hasTokenInfo(tokenStore.tokenInfo)) {
+    tokenStore.clearLocalLoginState()
+  }
+  isPageReady.value = false
+  toLoginPage({ queryString: `?redirect=${encodeURIComponent('/pages-business/workbench/index')}` })
+  toLoginPage.flush()
+  return false
 }
 
 function goModule(key: string) {
@@ -108,7 +132,11 @@ function handleBack() {
   navigateBackPlus()
 }
 
-onMounted(loadSummary)
+onMounted(() => {
+  if (ensurePageAuth()) {
+    loadSummary()
+  }
+})
 </script>
 
 <style scoped lang="scss">

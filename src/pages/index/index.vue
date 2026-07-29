@@ -1,5 +1,5 @@
 <template>
-  <view class="home-page">
+  <view v-if="isPageReady" class="home-page">
     <wd-navbar title="配送调度" placeholder safe-area-inset-top fixed custom-class="home-navbar">
       <template #right>
         <view class="nav-action" @click="gotoSearch">
@@ -118,9 +118,11 @@
 import type { OutboundWorkbenchSummary } from '@/api/business'
 import { storeToRefs } from 'pinia'
 import { businessApi } from '@/api/business'
-import { useUserStore } from '@/store'
+import { useTokenStore, useUserStore } from '@/store'
 import { computed, onMounted, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import { hasTokenInfo } from '@/utils/auth'
+import { toLoginPage } from '@/utils/toLoginPage'
 
 defineOptions({
   name: 'Home',
@@ -134,8 +136,10 @@ definePage({
 })
 
 const userStore = useUserStore()
+const tokenStore = useTokenStore()
 const { userInfo } = storeToRefs(userStore)
 
+const isPageReady = ref(tokenStore.updateNowTime().hasLogin)
 const summary = ref<OutboundWorkbenchSummary>({})
 const metrics = ref([
   { key: 'unassigned', title: '待分发', value: 0, desc: '等待调度', color: '#2f7dff' },
@@ -180,6 +184,9 @@ function getSummaryValue(list: any[] | undefined, key: string) {
 }
 
 async function loadSummary() {
+  if (!ensurePageAuth()) {
+    return
+  }
   try {
     const today = new Date().toISOString().slice(0, 10)
     const data = await businessApi.workbenchSummary({ startDate: today, endDate: today })
@@ -191,6 +198,22 @@ async function loadSummary() {
   } catch {
     summary.value = {}
   }
+}
+
+function ensurePageAuth() {
+  tokenStore.updateNowTime()
+  if (tokenStore.hasLogin) {
+    isPageReady.value = true
+    return true
+  }
+
+  if (hasTokenInfo(tokenStore.tokenInfo)) {
+    tokenStore.clearLocalLoginState()
+  }
+  isPageReady.value = false
+  toLoginPage({ queryString: `?redirect=${encodeURIComponent('/pages/index/index')}` })
+  toLoginPage.flush()
+  return false
 }
 
 function gotoSearch() {
@@ -212,11 +235,15 @@ function goTab(url: string) {
 }
 
 onMounted(() => {
-  loadSummary()
+  if (ensurePageAuth()) {
+    loadSummary()
+  }
 })
 
 onShow(() => {
-  loadSummary()
+  if (ensurePageAuth()) {
+    loadSummary()
+  }
 })
 </script>
 

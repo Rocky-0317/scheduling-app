@@ -126,6 +126,9 @@
           </view>
 
           <view v-if="showRecordActions" class="record-actions" :class="{ 'modern-record-actions': isModernModule }">
+            <view class="person-delete-button record-action-button record-copy-button" @click.stop="copyRecordInfo(item)">
+              复制
+            </view>
             <!-- 领取按钮权限 和web一致 business:outboundRecord:claim -->
             <view v-if="config.claim && item.assignmentStatus === '1' && hasPerm(['business:outboundRecord:claim'])" class="person-delete-button record-action-button" @click.stop="claimRecord(item)">
               领取
@@ -505,6 +508,50 @@ function uploadImages(item: any) {
       reload()
     },
   })
+}
+
+function copyRecordInfo(item: Record<string, any>) {
+  const lines = buildRecordCopyLines(item)
+  uni.setClipboardData({
+    data: lines.join('\n'),
+    success: () => toast.success('复制成功'),
+    fail: () => toast.error('复制失败'),
+  })
+}
+
+function buildRecordCopyLines(item: Record<string, any>) {
+  const lines = [config.value.title]
+  for (const key of getCopyFieldKeys()) {
+    lines.push(`${getFieldLabel(key)}：${formatCopyValue(item[key], key)}`)
+  }
+  return lines
+}
+
+function getCopyFieldKeys() {
+  const keys = [
+    config.value.primaryKey,
+    config.value.badgeKey,
+    ...config.value.formFields.map(field => field.key),
+    ...config.value.secondaryKeys,
+  ].filter(Boolean) as string[]
+  return Array.from(new Set(keys))
+}
+
+function formatCopyValue(value: any, fieldKey: string) {
+  if (fieldKey === 'imageUrls' && Array.isArray(value)) {
+    const urls = value.map(getImageUrl).filter(Boolean)
+    return urls.length ? urls.join('、') : '-'
+  }
+  const fieldOptions = getFieldOptions(fieldKey)
+  if (fieldOptions?.length) {
+    return getStatusLabel(fieldKey, value, fieldOptions)
+  }
+  return formatValue(value, fieldKey)
+}
+
+function getFieldOptions(fieldKey: string) {
+  const allFields = [...config.value.searchFields, ...config.value.formFields]
+  return allFields.find(field => field.key === fieldKey)?.options
 }
 
 function getFieldLabel(key: string) {
@@ -1097,6 +1144,11 @@ onMounted(async () => {
 .record-action-button {
   margin-left: 12rpx;
   margin-bottom: 10rpx;
+}
+
+.record-copy-button {
+  border-color: #16a34a;
+  background: #16a34a;
 }
 
 :deep(.person-status-tag) {

@@ -3,19 +3,19 @@ import { businessApi } from '@/api/business'
 
 export type BusinessModuleKey
   = | 'outboundRecord'
-  | 'outboundPersonnel'
-  | 'outboundGrid'
-  | 'bizPackage'
-  | 'customerInfo'
-  | 'storeList'
-  | 'storeInfo'
-  | 'timeoutReminder'
-  | 'assignmentTree'
+    | 'outboundPersonnel'
+    | 'outboundGrid'
+    | 'bizPackage'
+    | 'customerInfo'
+    | 'storeList'
+    | 'storeInfo'
+    | 'timeoutReminder'
+    | 'assignmentTree'
 
 export interface BusinessField {
   key: string
   label: string
-  type?: 'text' | 'number' | 'textarea' | 'radio' | 'date' | 'picker' | 'multiPicker'| 'imageUpload'
+  type?: 'text' | 'number' | 'textarea' | 'radio' | 'date' | 'picker' | 'multiPicker' | 'imageUpload'
   required?: boolean | ((data: Record<string, any>) => boolean)
   readonly?: boolean
   hiddenOnCreate?: boolean
@@ -107,7 +107,6 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'packageName', label: '套餐' },
       { key: 'grid', label: '网格', type: 'picker', source: 'grid', required: true },
       { key: 'deliveryAddress', label: '配送地址', type: 'textarea' },
-      { key: 'receiver', label: '接单人', hiddenOnCreate: true, readonly: true },
       { key: 'receiverName', label: '接单人', hiddenOnCreate: true, readonly: true },
       { key: 'orderTime', label: '接单时间', hiddenOnCreate: true, readonly: true },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', hiddenOnCreate: true, options: assignmentOptions, readonly: true },
@@ -131,14 +130,14 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
           const typeList = Array.isArray(data.businessType) ? data.businessType : [data.businessType]
           const matchType = typeList.some(item => ['0', '1'].includes(item))
           return successFlag && matchType
-        }
+        },
       },
       // 凭证图片字段：移除readonly，编辑可上传
       {
         key: 'imageUrls',
         label: '凭证图片',
         hiddenOnCreate: true,
-        type: 'imageUpload'
+        type: 'imageUpload',
       },
       { key: 'followStatus', label: '跟进情况', type: 'textarea' },
       { key: 'remark', label: '备注', type: 'textarea' },

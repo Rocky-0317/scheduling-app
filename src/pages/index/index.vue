@@ -34,6 +34,28 @@
         </view>
       </view>
 
+      <view class="summary-filter">
+        <view class="summary-filter__copy">
+          <view class="summary-filter__label">
+            开始日期
+          </view>
+          <view class="summary-filter__value" @click="openSummaryDatePicker('start')">
+            {{ startDate }}
+          </view>
+        </view>
+        <view class="summary-filter__copy">
+          <view class="summary-filter__label">
+            结束日期
+          </view>
+          <view class="summary-filter__value" @click="openSummaryDatePicker('end')">
+            {{ endDate }}
+          </view>
+        </view>
+        <wd-button size="small" type="primary" plain @click="loadSummary">
+          查询
+        </wd-button>
+      </view>
+
       <view class="metric-grid">
         <view v-for="item in metrics" :key="item.key" class="metric-card">
           <view class="metric-head">
@@ -111,6 +133,14 @@
 
       <view class="bottom-space" />
     </scroll-view>
+
+    <wd-datetime-picker
+      v-model="datePickerValue"
+      v-model:visible="datePickerVisible"
+      :title="datePickerTitle"
+      type="date"
+      @confirm="confirmSummaryDatePicker"
+    />
   </view>
 </template>
 
@@ -123,6 +153,7 @@ import { computed, onMounted, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { hasTokenInfo } from '@/utils/auth'
 import { toLoginPage } from '@/utils/toLoginPage'
+import { formatDateOnly, toTimestamp } from '@/utils/date'
 
 defineOptions({
   name: 'Home',
@@ -141,6 +172,12 @@ const { userInfo } = storeToRefs(userStore)
 
 const isPageReady = ref(tokenStore.updateNowTime().hasLogin)
 const summary = ref<OutboundWorkbenchSummary>({})
+const today = formatDateOnly(new Date())
+const startDate = ref(today)
+const endDate = ref(today)
+const datePickerValue = ref(Date.now())
+const datePickerVisible = ref(false)
+const activeDateType = ref<'start' | 'end'>('start')
 const metrics = ref([
   { key: 'unassigned', title: '待分发', value: 0, desc: '等待调度', color: '#2f7dff' },
   { key: 'pendingClaim', title: '待领取', value: 0, desc: '待业务处理', color: '#d97706' },
@@ -176,6 +213,8 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
+const datePickerTitle = computed(() => activeDateType.value === 'start' ? '选择开始日期' : '选择结束日期')
+
 function getSummaryValue(list: any[] | undefined, key: string) {
   const candidates = key === 'successHandled'
     ? ['successHandled', 'reviewRequired', 'successHandleTotal', 'successTotal', 'successCount', 'success']
@@ -188,8 +227,7 @@ async function loadSummary() {
     return
   }
   try {
-    const today = new Date().toISOString().slice(0, 10)
-    const data = await businessApi.workbenchSummary({ startDate: today, endDate: today })
+    const data = await businessApi.workbenchSummary({ startDate: startDate.value, endDate: endDate.value })
     summary.value = data || {}
     metrics.value = metrics.value.map(item => ({
       ...item,
@@ -198,6 +236,29 @@ async function loadSummary() {
   } catch {
     summary.value = {}
   }
+}
+
+function openSummaryDatePicker(type: 'start' | 'end') {
+  activeDateType.value = type
+  const timestamp = toTimestamp(type === 'start' ? startDate.value : endDate.value)
+  datePickerValue.value = Number.isNaN(timestamp) ? Date.now() : timestamp
+  datePickerVisible.value = true
+}
+
+function confirmSummaryDatePicker({ value }: { value: number }) {
+  const pickedDate = formatDateOnly(value)
+  if (activeDateType.value === 'start') {
+    startDate.value = pickedDate
+    if (toTimestamp(startDate.value) > toTimestamp(endDate.value)) {
+      endDate.value = pickedDate
+    }
+  } else {
+    endDate.value = pickedDate
+    if (toTimestamp(endDate.value) < toTimestamp(startDate.value)) {
+      startDate.value = pickedDate
+    }
+  }
+  loadSummary()
 }
 
 function ensurePageAuth() {
@@ -400,6 +461,38 @@ onShow(() => {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18rpx;
   margin: 22rpx 24rpx 0;
+}
+
+.summary-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin: 22rpx 24rpx 0;
+  padding: 18rpx 22rpx;
+  border: 1rpx solid #dbe8ff;
+  border-radius: 22rpx;
+  background: #fff;
+  box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.06);
+}
+
+.summary-filter__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.summary-filter__label {
+  color: #64748b;
+  font-size: 22rpx;
+  line-height: 30rpx;
+}
+
+.summary-filter__value {
+  margin-top: 4rpx;
+  color: #0b2b5c;
+  font-size: 30rpx;
+  font-weight: 850;
+  line-height: 40rpx;
 }
 
 .metric-card {

@@ -144,8 +144,8 @@ const verifyRef = ref<{ show: () => void }>()
 const captchaType = ref<'blockPuzzle' | 'clickWord'>('blockPuzzle')
 
 const formData = reactive({
-  username: import.meta.env.VITE_APP_DEFAULT_LOGIN_USERNAME || '',
-  password: import.meta.env.VITE_APP_DEFAULT_LOGIN_PASSWORD || '',
+  username: '',
+  password: '',
   code: '',
   uuid: '',
   captchaVerification: '',

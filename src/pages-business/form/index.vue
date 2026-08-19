@@ -9,7 +9,7 @@
             <template v-for="field in visibleFields" :key="field?.key">
               <view v-if="field.type === 'imageUpload'" class="image-view-wrap">
                 <view class="image-label">
-                  {{ field.label }}
+                  {{ getDisplayFieldLabel(field) }}
                 </view>
                 <view class="image-list">
                   <view
@@ -28,10 +28,10 @@
               <yd-form-picker
                 v-else-if="field.type === 'picker' || field.type === 'multiPicker'"
                 v-model="formData[field.key]"
-                :label="field.label"
+                :label="getDisplayFieldLabel(field)"
                 label-width="190rpx"
                 :prop="field.key"
-                :placeholder="`请选择${field.label}`"
+                :placeholder="`请选择${getDisplayFieldLabel(field)}`"
                 :columns="getPickerOptions(field)"
                 :type="field.type === 'multiPicker' ? 'checkbox' : 'radio'"
                 :filterable="true"
@@ -39,7 +39,7 @@
                 :before-open="() => handlePickerOpen(field)"
                 @confirm="value => handlePickerConfirm(field, value)"
               />
-              <wd-form-item v-else :title="field.label" title-width="190rpx" :prop="field.key">
+              <wd-form-item v-else :title="getDisplayFieldLabel(field)" title-width="190rpx" :prop="field.key">
                 <view class="input-wrap">
                   <wd-radio-group
                     v-if="field.type === 'radio'"
@@ -47,7 +47,7 @@
                     type="button"
                     :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
                   >
-                    <wd-radio v-for="option in field.options || []" :key="option.value" :value="option.value">
+                    <wd-radio v-for="option in getFieldOptions(field)" :key="option.value" :value="option.value">
                       {{ option.label }}
                     </wd-radio>
                   </wd-radio-group>
@@ -62,7 +62,7 @@
                   <wd-input
                     v-else-if="field.type === 'date'"
                     :model-value="formatDateText(formData[field.key])"
-                    :placeholder="`请选择${field.label}`"
+                    :placeholder="`请选择${getDisplayFieldLabel(field)}`"
                     :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
                     readonly
                     clearable="false"
@@ -71,7 +71,7 @@
                   <wd-textarea
                     v-else-if="field.type === 'textarea'"
                     v-model="formData[field.key]"
-                    :placeholder="`请输入${field.label}`"
+                    :placeholder="`请输入${getDisplayFieldLabel(field)}`"
                     :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
                     :maxlength="1000"
                     clearable="false"
@@ -79,7 +79,7 @@
                   <wd-input
                     v-else
                     v-model="formData[field.key]"
-                    :placeholder="`请输入${field.label}`"
+                    :placeholder="`请输入${getDisplayFieldLabel(field)}`"
                     :disabled="isView || field.readonly || (field.key === 'userName' && !!props.id) || isFieldReadonlyByRole(field.key)"
                     clearable="false"
                   />
@@ -142,6 +142,7 @@ const activeDateKey = ref('')
 const loadingDetail = ref(false)
 const roleOptions = ref<Array<{ label: string, value: number, roleKey: string, disabled: boolean }>>([])
 const businessTypeOptions = ref<Array<{ label: string, value: string }>>([])
+const businessIsSuccessOptions = ref<Array<{ label: string, value: string }>>([])
 const gridOptions = ref<Array<{ label: string, value: string }>>([])
 
 // 全部computed前置定义，增加空数组兜底，防止undefined
@@ -215,7 +216,7 @@ const hasEditableField = computed(() => {
 })
 const datePickerTitle = computed(() => {
   const field = visibleFields.value.find(item => item.key === activeDateKey.value)
-  return `请选择${field?.label || '日期'}`
+  return `请选择${field ? getDisplayFieldLabel(field) : '日期'}`
 })
 const formSchema = computed(() => createFormSchema(
   visibleFields.value.reduce((rules, field) => {
@@ -227,7 +228,7 @@ const formSchema = computed(() => createFormSchema(
     if (field.key === 'cardNumber')
       requiredFlag = showCardNumberField.value && !isView.value
     if (requiredFlag)
-      rules[field.key] = [{ required: true, message: `${field.label}不能为空` }]
+      rules[field.key] = [{ required: true, message: `${getDisplayFieldLabel(field)}不能为空` }]
     return rules
   }, {} as Record<string, any>),
 ))
@@ -375,6 +376,20 @@ function normalizeMultiValue(value?: string | string[]) {
     return []
   return String(value).split(',').map(item => item.trim()).filter(Boolean)
 }
+function isTerminalBusinessType() {
+  const typeList = normalizeMultiValue(formData.value.businessType).map(item => String(item))
+  return typeList.some((value) => {
+    if (value === '1')
+      return true
+    const option = businessTypeOptions.value.find(item => String(item.value) === value)
+    return option?.label?.includes('终端')
+  })
+}
+function getDisplayFieldLabel(field: BusinessField) {
+  if (config.value.key === 'outboundRecord' && field.key === 'cardNumber' && isTerminalBusinessType())
+    return '终端串码'
+  return field.label
+}
 function imgList(rawVal: string | string[] | undefined) {
   return normalizeMultiValue(rawVal)
 }
@@ -390,10 +405,15 @@ function previewImage(url: string) {
   uni.previewImage({ urls: [url], current: url })
 }
 function getPickerOptions(field: BusinessField) {
+  return getFieldOptions(field)
+}
+function getFieldOptions(field: BusinessField) {
   if (field.source === 'role')
     return roleOptions.value
   if (field.source === 'businessType')
     return filteredBusinessTypeOptions.value
+  if (field.source === 'businessIsSuccess')
+    return businessIsSuccessOptions.value
   if (field.source === 'grid')
     return gridOptions.value
   return field.options || []
@@ -444,6 +464,16 @@ async function loadBusinessTypeOptions() {
     }))
     .filter(item => item.label && item.value !== '')
 }
+async function loadBusinessIsSuccessOptions() {
+  const rows = await businessApi.listBusinessIsSuccessOptions()
+  businessIsSuccessOptions.value = (rows || [])
+    .filter(item => item.status === undefined || String(item.status) === '0')
+    .map(item => ({
+      label: item.dictLabel || item.label || '',
+      value: String(item.dictValue ?? item.value ?? ''),
+    }))
+    .filter(item => item.label && item.value !== '')
+}
 async function loadGridOptions(force = false) {
   if (!force && gridOptions.value.length > 0)
     return
@@ -471,6 +501,7 @@ watch(() => formData.value.roleId, (next, prev) => {
 onMounted(async () => {
   await loadRoleOptions()
   await loadBusinessTypeOptions()
+  await loadBusinessIsSuccessOptions()
   await loadGridOptions()
   initDefaults()
   if (isEdit.value)

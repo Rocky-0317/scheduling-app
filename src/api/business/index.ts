@@ -274,6 +274,9 @@ export const businessApi = {
   listBusinessTypeOptions() {
     return http.get<BusinessDictData[]>('/system/dict/data/type/business_type')
   },
+  listBusinessIsSuccessOptions() {
+    return http.get<BusinessDictData[]>('/system/dict/data/type/business_is_success')
+  },
 
   listStore(params: Record<string, any>) {
     return http.get<OutboundPersonnel[] | { data?: OutboundPersonnel[], rows?: OutboundPersonnel[], total?: number }>('/business/outboundPersonnel/store/list', params)

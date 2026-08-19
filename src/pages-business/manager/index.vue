@@ -262,7 +262,7 @@
             <wd-radio value="">
               全部
             </wd-radio>
-            <wd-radio v-for="option in field.options" :key="option.value" :value="option.value">
+            <wd-radio v-for="option in getFieldOptions(field.key)" :key="option.value" :value="option.value">
               {{ option.label }}
             </wd-radio>
           </wd-radio-group>
@@ -291,6 +291,7 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import {
+  getCachedSourceOptions,
   getModuleConfig,
   getSourceMultiLabel,
   getStatusLabel,
@@ -551,7 +552,10 @@ function formatCopyValue(value: any, fieldKey: string) {
 
 function getFieldOptions(fieldKey: string) {
   const allFields = [...config.value.searchFields, ...config.value.formFields]
-  return allFields.find(field => field.key === fieldKey)?.options
+  const field = allFields.find(field => field.key === fieldKey)
+  if (field?.source)
+    return getCachedSourceOptions(field.source)
+  return field?.options
 }
 
 function getFieldLabel(key: string) {

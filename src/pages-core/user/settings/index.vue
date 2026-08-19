@@ -71,7 +71,7 @@ definePage({
 
 const toast = useToast()
 const dialog = useDialog()
-const version = ref('1.0.0') // 当前版本号
+const version = ref('1.0.1') // 当前版本号
 const storageSize = ref('') // 本地缓存大小
 
 /** 返回上一页 */
@@ -83,7 +83,7 @@ function handleBack() {
 function getAppVersion() {
   // #ifdef APP-PLUS
   const appInfo = uni.getSystemInfoSync()
-  version.value = appInfo.appVersion || '1.0.0'
+  version.value = appInfo.appVersion || '1.0.1'
   // #endif
 }
 

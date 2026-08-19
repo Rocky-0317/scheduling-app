@@ -5,8 +5,8 @@ export function getLocalAppVersion() {
   // H5浏览器调试，模拟低版本本地包，方便测试更新弹窗
   // #ifdef H5
   return {
-    versionName: '1.0.0',
-    versionCode: 100,
+    versionName: '1.0.1',
+    versionCode: 101,
   }
   // #endif
 
@@ -14,14 +14,14 @@ export function getLocalAppVersion() {
   // #ifdef APP-PLUS
   const info = (uni as any).getAppInfo?.() || {}
   return {
-    versionName: info.versionName || '1.0.0',
-    versionCode: Number(info.versionCode) || 100,
+    versionName: info.versionName || '1.0.1',
+    versionCode: Number(info.versionCode) || 101,
   }
   // #endif
 
   return {
-    versionName: '1.0.0',
-    versionCode: 100,
+    versionName: '1.0.1',
+    versionCode: 101,
   }
 }
 

@@ -22,7 +22,7 @@ export interface BusinessField {
   hiddenOnView?: boolean // 新增：仅详情隐藏
   condition?: (data: Record<string, any>) => boolean // 新增：动态显示条件
   options?: Array<{ label: string, value: string | number }>
-  source?: 'role' | 'businessType' | 'grid'
+  source?: SourceOptionType
 }
 
 export interface BusinessModuleConfig {
@@ -68,12 +68,6 @@ export const claimOptions = [
   { label: '已领取', value: '1' },
 ]
 
-export const successOptions = [
-  { label: '未处理', value: '0' },
-  { label: '成功', value: '1' },
-  { label: '失败', value: '2' },
-]
-
 export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = {
   outboundRecord: {
     key: 'outboundRecord',
@@ -97,7 +91,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'grid', label: '网格', type: 'picker', source: 'grid' },
       { key: 'receiver', label: '接单人' },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', options: assignmentOptions },
-      { key: 'isSuccess', label: '是否成功', type: 'radio', options: successOptions },
+      { key: 'isSuccess', label: '是否成功', type: 'radio', source: 'businessIsSuccess' },
     ],
     formFields: [
       { key: 'businessType', label: '业务类型', type: 'picker', source: 'businessType', required: true },
@@ -110,13 +104,13 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'receiverName', label: '接单人', hiddenOnCreate: true, readonly: true },
       { key: 'orderTime', label: '接单时间', hiddenOnCreate: true, readonly: true },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', hiddenOnCreate: true, options: assignmentOptions, readonly: true },
-      { key: 'isSuccess', label: '是否成功', type: 'radio', hiddenOnCreate: true, options: successOptions },
-      // 新增办理号卡：仅isSuccess=1、编辑模式显示，必填，对齐Web逻辑
+      { key: 'isSuccess', label: '是否成功', type: 'radio', hiddenOnCreate: true, source: 'businessIsSuccess' },
+      // 新增办理号卡：仅配送成功(isSuccess=1)、编辑模式显示，必填，对齐Web逻辑
       {
         key: 'cardNumber',
         label: '办理号卡',
         hiddenOnCreate: true,
-        // 动态显示条件：成功 且 业务类型是0/1（号码卡/终端）
+        // 动态显示条件：配送成功 且 业务类型是0/1（号码卡/终端）
         condition: (data) => {
           const successFlag = data.isSuccess === '1'
           // businessType 是数组 ['0','1'] 或者单字符串 '0'/'1' 兼容两种格式
@@ -395,10 +389,16 @@ export interface SelectOption {
   value: string | number
 }
 
+export type SourceOptionType = 'role' | 'businessType' | 'businessIsSuccess' | 'grid'
+
 // 全局缓存下拉选项，避免重复请求
 export const sourceOptionCache: Record<string, SelectOption[]> = {}
 
-export async function loadSourceOptions(source: 'role' | 'businessType' | 'grid'): Promise<SelectOption[]> {
+export function getCachedSourceOptions(source: SourceOptionType): SelectOption[] {
+  return sourceOptionCache[source] || []
+}
+
+export async function loadSourceOptions(source: SourceOptionType): Promise<SelectOption[]> {
   // 命中缓存直接返回
   if (sourceOptionCache[source])
     return sourceOptionCache[source]
@@ -411,6 +411,15 @@ export async function loadSourceOptions(source: 'role' | 'businessType' | 'grid'
         list = dataList.map(item => ({
           label: item.dictLabel || item.label || '',
           // 统一转字符串，避免数字/字符串类型不匹配
+          value: String(item.dictValue ?? item.value ?? ''),
+        })).filter(item => item.label && item.value)
+        break
+      }
+      case 'businessIsSuccess': {
+        const res = await businessApi.listBusinessIsSuccessOptions()
+        const dataList = Array.isArray(res) ? res : []
+        list = dataList.map(item => ({
+          label: item.dictLabel || item.label || '',
           value: String(item.dictValue ?? item.value ?? ''),
         })).filter(item => item.label && item.value)
         break
@@ -448,7 +457,7 @@ export async function loadSourceOptions(source: 'role' | 'businessType' | 'grid'
  * 异步翻译：适用于异步场景，自动加载缓存
  */
 export async function getSourceLabel(
-  sourceType: 'role' | 'businessType' | 'grid',
+  sourceType: SourceOptionType,
   value: string | number | string[] | number[] | null | undefined,
 ): Promise<string> {
   if (!value || (Array.isArray(value) && value.length === 0))
@@ -465,7 +474,7 @@ export async function getSourceLabel(
  * 同步翻译：列表渲染用，依赖预加载的缓存数据，和form页面完全同源
  */
 export function getSourceMultiLabel(
-  sourceType: 'role' | 'businessType' | 'grid',
+  sourceType: SourceOptionType,
   value: string | string[] | number | number[] | null | undefined,
 ): string {
   if (!value || (Array.isArray(value) && value.length === 0))
@@ -483,6 +492,7 @@ export function getSourceMultiLabel(
 export async function preloadAllSourceOptions() {
   await Promise.all([
     loadSourceOptions('businessType'),
+    loadSourceOptions('businessIsSuccess'),
     loadSourceOptions('grid'),
     loadSourceOptions('role'),
   ])

@@ -285,14 +285,7 @@ export const useTokenStore = defineStore(
           uniPlatform?: string
         }
 
-        // 只允许原生 APP 执行版本更新。
-        if (systemInfo.uniPlatform !== 'app') {
-          console.log('当前不是 APP 环境，跳过版本检查', {
-            uniPlatform: systemInfo.uniPlatform,
-            platform: systemInfo.platform,
-          })
-          return
-        }
+        // 允许所有运行环境执行版本检查，便于 H5/小程序等环境调试后端版本接口。
 
         const localVersion = getLocalAppVersion()
 

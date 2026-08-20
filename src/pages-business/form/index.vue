@@ -74,6 +74,7 @@
                     :placeholder="`请输入${getDisplayFieldLabel(field)}`"
                     :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
                     :maxlength="1000"
+                    :auto-height="isView"
                     clearable="false"
                   />
                   <wd-input
@@ -402,7 +403,8 @@ function getImageFullUrl(url: string): string {
   return `${baseApi}${url}`
 }
 function previewImage(url: string) {
-  uni.previewImage({ urls: [url], current: url })
+  const imageUrl = getImageFullUrl(url)
+  uni.previewImage({ urls: [imageUrl], current: imageUrl })
 }
 function getPickerOptions(field: BusinessField) {
   return getFieldOptions(field)
@@ -519,6 +521,22 @@ onMounted(async () => {
   margin: 20rpx 24rpx;
   overflow: hidden;
   border-radius: 8rpx;
+}
+:deep(.wd-cell) {
+  align-items: flex-start;
+}
+:deep(.wd-cell__title) {
+  flex: 0 0 190rpx;
+}
+:deep(.wd-cell__value) {
+  min-width: 0;
+}
+:deep(.wd-textarea) {
+  min-height: 48rpx;
+}
+:deep(.wd-textarea__inner) {
+  min-height: 48rpx;
+  line-height: 1.5;
 }
 :deep(.button-icon) {
   margin-right: 12rpx;

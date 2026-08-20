@@ -107,7 +107,7 @@
             </view>
           </view>
 
-          <scroll-view v-if="item.imageUrls?.length" scroll-x class="image-strip">
+          <scroll-view v-if="showListImages(item)" scroll-x class="image-strip">
             <image
               v-for="url in item.imageUrls"
               :key="url"
@@ -548,6 +548,10 @@ function formatCopyValue(value: any, fieldKey: string) {
     return getStatusLabel(fieldKey, value, fieldOptions)
   }
   return formatValue(value, fieldKey)
+}
+
+function showListImages(item: Record<string, any>) {
+  return config.value.key !== 'outboundRecord' && Array.isArray(item.imageUrls) && item.imageUrls.length > 0
 }
 
 function getFieldOptions(fieldKey: string) {

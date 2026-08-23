@@ -790,7 +790,10 @@ onMounted(async () => {
   background: #f5f7fb;
 }
 .business-form__scroll {
+  position: relative;
+  z-index: 0;
   box-sizing: border-box;
+  overflow: hidden;
 }
 :deep(.wd-cell-group) {
   margin: 20rpx 24rpx 176rpx;
@@ -865,6 +868,8 @@ onMounted(async () => {
   vertical-align: -3rpx;
 }
 .yd-detail-footer {
+  position: relative;
+  z-index: 1;
   padding: 24rpx;
   background: #fff;
 }

@@ -25,6 +25,7 @@ const countdown = ref(5)
 let downloadTask: PlusDownloaderDownload | null = null
 let autoUpdateTimer: ReturnType<typeof setInterval> | undefined
 let handlingFailure = false
+let updateContinuesInBackground = false
 const updateFailedMessage = '自动更新失败，请卸载原有应用，前往网页版重新扫码下载最新 APP'
 
 const actionText = computed(() => {
@@ -51,6 +52,15 @@ function resetTask(message = '') {
   downloadTask = null
 }
 
+function showUpdateFailureModal() {
+  uni.showModal({
+    title: '更新失败',
+    content: updateFailedMessage,
+    showCancel: false,
+    confirmText: '知道了',
+  })
+}
+
 function handleUpdateFailure(error?: unknown) {
   if (handlingFailure)
     return
@@ -65,16 +75,12 @@ function handleUpdateFailure(error?: unknown) {
   resetTask(updateFailedMessage)
   clearPendingAppUpdate()
 
-  uni.navigateBack({
-    complete: () => {
-      uni.showModal({
-        title: '更新失败',
-        content: updateFailedMessage,
-        showCancel: false,
-        confirmText: '知道了',
-      })
-    },
-  })
+  if (updateContinuesInBackground) {
+    showUpdateFailureModal()
+    return
+  }
+
+  uni.navigateBack({ complete: showUpdateFailureModal })
 }
 
 function validateUpdatePackage() {
@@ -169,12 +175,8 @@ function startUpdate() {
 }
 
 function closeUpdatePopup() {
-  clearAutoUpdateTimer()
-  if (downloadTask && downloading.value)
-    downloadTask.abort()
-  if (update.value)
-    dismissAppUpdate(update.value.versionCode)
-  clearPendingAppUpdate()
+  // 关闭的只是提示页；倒计时、下载和安装流程继续在后台执行。
+  updateContinuesInBackground = true
   uni.navigateBack()
 }
 
@@ -199,6 +201,9 @@ onLoad(() => {
 })
 
 onBackPress(() => {
+  if (updateContinuesInBackground)
+    return false
+
   clearAutoUpdateTimer()
   if (downloadTask && downloading.value)
     downloadTask.abort()
@@ -209,6 +214,9 @@ onBackPress(() => {
 })
 
 onUnload(() => {
+  if (updateContinuesInBackground)
+    return
+
   clearAutoUpdateTimer()
   if (downloadTask && downloading.value)
     downloadTask.abort()

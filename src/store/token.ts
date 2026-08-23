@@ -114,7 +114,9 @@ export const useTokenStore = defineStore(
         detectedAt: Date.now(),
       })
 
-      const currentPage = getCurrentPages().at(-1)?.route
+      // 部分旧版 Android WebView 不支持 Array.prototype.at。
+      const pages = getCurrentPages()
+      const currentPage = pages[pages.length - 1]?.route
       if (`/${currentPage}` === APP_UPDATE_PAGE)
         return
 

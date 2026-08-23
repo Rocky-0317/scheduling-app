@@ -138,7 +138,6 @@ onMounted(() => void friendStore.fetchFriendList())
 .friend-search-wrap {
   display: flex;
   align-items: center;
-  gap: 16rpx;
   padding: 16rpx 24rpx;
   background: #ededed;
 }
@@ -146,6 +145,7 @@ onMounted(() => void friendStore.fetchFriendList())
 :deep(.friend-search) {
   min-width: 0;
   flex: 1;
+  margin-right: 16rpx;
   --wot-search-padding: 0;
   --wot-search-bg: transparent;
   --wot-search-input-bg: #fff;

@@ -43,7 +43,13 @@ const tagVariant = computed(() => {
 .fc-display-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
+  margin-right: -12rpx;
+  margin-bottom: -12rpx;
   padding: 20rpx 24rpx;
+}
+
+.fc-display-tags__item {
+  margin-right: 12rpx;
+  margin-bottom: 12rpx;
 }
 </style>

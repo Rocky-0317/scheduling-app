@@ -173,7 +173,6 @@ async function onRefresh() {
 .conversation-search-wrap {
   display: flex;
   align-items: center;
-  gap: 16rpx;
   padding: 16rpx 24rpx;
   background: #ededed;
 }
@@ -181,6 +180,7 @@ async function onRefresh() {
 :deep(.conversation-search) {
   min-width: 0;
   flex: 1;
+  margin-right: 16rpx;
   --wot-search-padding: 0;
   --wot-search-bg: transparent;
   --wot-search-input-bg: #fff;
@@ -209,11 +209,14 @@ async function onRefresh() {
 .top-conversation-bar {
   display: flex;
   align-items: center;
-  gap: 20rpx;
   padding: 22rpx 28rpx;
   border-bottom: 1rpx solid #e5e5e5;
   background: #f7f7f7;
   color: #737373;
   font-size: 28rpx;
+}
+
+.top-conversation-bar > :not(:last-child) {
+  margin-right: 20rpx;
 }
 </style>

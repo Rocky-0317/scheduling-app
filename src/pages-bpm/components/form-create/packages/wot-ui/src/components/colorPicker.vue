@@ -99,8 +99,11 @@ function selectColor(color: string) {
 .fc-color-picker {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
   width: 100%;
+}
+
+.fc-color-picker > :not(:last-child) {
+  margin-bottom: 16rpx;
 }
 
 .fc-color-picker.is-disabled {
@@ -110,13 +113,13 @@ function selectColor(color: string) {
 .fc-color-picker__input {
   display: flex;
   align-items: center;
-  gap: 16rpx;
   width: 100%;
 }
 
 .fc-color-picker__preview {
   box-sizing: border-box;
   flex-shrink: 0;
+  margin-right: 16rpx;
   width: 52rpx;
   height: 52rpx;
   border: 1rpx solid #dcdfe6;
@@ -126,13 +129,16 @@ function selectColor(color: string) {
 .fc-color-picker__presets {
   display: flex;
   flex-wrap: wrap;
-  gap: 12rpx;
+  margin-right: -12rpx;
+  margin-bottom: -12rpx;
 }
 
 .fc-color-picker__swatch {
   box-sizing: border-box;
   width: 44rpx;
   height: 44rpx;
+  margin-right: 12rpx;
+  margin-bottom: 12rpx;
   border: 2rpx solid #dcdfe6;
   border-radius: 8rpx;
 }

@@ -467,13 +467,16 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18rpx;
   margin: 22rpx 24rpx 0;
   padding: 18rpx 22rpx;
   border: 1rpx solid #dbe8ff;
   border-radius: 22rpx;
   background: #fff;
   box-shadow: 0 10rpx 28rpx rgba(47, 125, 255, 0.06);
+}
+
+.summary-filter > view:not(:last-child) {
+  margin-right: 18rpx;
 }
 
 .summary-filter__copy {
@@ -538,7 +541,6 @@ onShow(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18rpx;
 }
 
 .section-title {
@@ -669,7 +671,6 @@ onShow(() => {
 .quick-card {
   display: flex;
   align-items: center;
-  gap: 14rpx;
   min-height: 92rpx;
   padding: 0 22rpx;
   border: 1rpx solid #edf0f2;
@@ -678,6 +679,10 @@ onShow(() => {
   background: #f8fbff;
   font-size: 25rpx;
   font-weight: 800;
+}
+
+.quick-card :deep(.wd-icon) {
+  margin-right: 14rpx;
 }
 
 .bottom-space {

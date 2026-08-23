@@ -703,13 +703,13 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   flex-direction: column;
-  gap: 12rpx;
   color: #777;
   font-size: 23rpx;
 }
 
 .im-tool-icon {
   width: 112rpx;
+  margin-bottom: 12rpx;
   height: 112rpx;
   display: flex;
   align-items: center;

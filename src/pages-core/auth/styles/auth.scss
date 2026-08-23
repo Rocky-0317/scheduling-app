@@ -92,6 +92,7 @@
   justify-content: center;
   width: 80rpx;
   height: 80rpx;
+  margin-bottom: 12rpx;
   border-radius: 22rpx;
   background: #eef5ff;
   box-shadow: 0 10rpx 24rpx rgba(47, 125, 255, 0.1);
@@ -102,7 +103,6 @@
   min-width: 120rpx;
   align-items: center;
   flex-direction: column;
-  gap: 12rpx;
   color: #6b7280;
   font-size: 24rpx;
 }

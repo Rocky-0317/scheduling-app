@@ -256,7 +256,10 @@ onLoad(() => {
   &__right {
     display: flex;
     align-items: center;
-    gap: 16rpx;
+
+    > view:not(:last-child) {
+      margin-right: 16rpx;
+    }
   }
 }
 

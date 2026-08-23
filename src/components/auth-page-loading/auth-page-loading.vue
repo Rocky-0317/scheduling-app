@@ -25,8 +25,11 @@ withDefaults(defineProps<{
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 20rpx;
   background: #f7f8fa;
+}
+
+.auth-page-loading :deep(.wd-loading) {
+  margin-bottom: 20rpx;
 }
 
 .auth-page-loading__text {

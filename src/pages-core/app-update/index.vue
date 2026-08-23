@@ -24,6 +24,7 @@ const errorMessage = ref('')
 const countdown = ref(5)
 let downloadTask: PlusDownloaderDownload | null = null
 let autoUpdateTimer: ReturnType<typeof setInterval> | undefined
+let handlingFailure = false
 const updateFailedMessage = '自动更新失败，请卸载原有应用，前往网页版重新扫码下载最新 APP'
 
 const actionText = computed(() => {
@@ -50,6 +51,32 @@ function resetTask(message = '') {
   downloadTask = null
 }
 
+function handleUpdateFailure(error?: unknown) {
+  if (handlingFailure)
+    return
+
+  handlingFailure = true
+  if (error)
+    console.error('APP 自动更新失败', error)
+
+  clearAutoUpdateTimer()
+  if (downloadTask && downloading.value)
+    downloadTask.abort()
+  resetTask(updateFailedMessage)
+  clearPendingAppUpdate()
+
+  uni.navigateBack({
+    complete: () => {
+      uni.showModal({
+        title: '更新失败',
+        content: updateFailedMessage,
+        showCancel: false,
+        confirmText: '知道了',
+      })
+    },
+  })
+}
+
 function validateUpdatePackage() {
   if (!update.value?.downloadUrl)
     return '未配置安装包下载地址'
@@ -70,11 +97,11 @@ function installApk(filename: string) {
     { force: false },
     () => {
       resetTask()
+      clearPendingAppUpdate()
       uni.showToast({ title: '请在系统页面完成安装', icon: 'none', duration: 3000 })
     },
     (error) => {
-      console.error('APK 安装失败', error)
-      resetTask(updateFailedMessage)
+      handleUpdateFailure(error)
     },
   )
 }
@@ -90,12 +117,12 @@ function verifyAndInstall(filename: string) {
       const expectedSize = Number(update.value?.apkFileSize || 0)
       if (expectedSize > 0 && Number(metadata.size) !== expectedSize) {
         entry.remove(() => {}, () => {})
-        resetTask(updateFailedMessage)
+        handleUpdateFailure(new Error('APK 文件大小与服务端记录不一致'))
         return
       }
       installApk(filename)
-    }, () => resetTask(updateFailedMessage))
-  }, () => resetTask(updateFailedMessage))
+    }, error => handleUpdateFailure(error))
+  }, error => handleUpdateFailure(error))
 }
 
 function startUpdate() {
@@ -106,7 +133,7 @@ function startUpdate() {
 
   const validationError = validateUpdatePackage()
   if (validationError) {
-    errorMessage.value = validationError
+    handleUpdateFailure(new Error(validationError))
     return
   }
 
@@ -126,8 +153,7 @@ function startUpdate() {
         verifyAndInstall(download.filename)
         return
       }
-      console.error('安装包下载失败', { status, download })
-      resetTask(updateFailedMessage)
+      handleUpdateFailure({ status, download })
     },
   )
   downloadTask.addEventListener('statechanged', (task) => {
@@ -138,7 +164,7 @@ function startUpdate() {
   // #endif
 
   // #ifndef APP-PLUS
-  errorMessage.value = '当前环境不支持 APP 整包更新'
+  handleUpdateFailure(new Error('当前环境不支持 APP 整包更新'))
   // #endif
 }
 

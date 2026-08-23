@@ -36,6 +36,11 @@ import {
   willAccessTokenExpireSoon,
 } from '@/utils/auth'
 import { getLocalAppVersion } from '@/utils/app'
+import {
+  APP_UPDATE_PAGE,
+  isAppUpdateDismissed,
+  savePendingAppUpdate,
+} from '@/utils/appUpdate'
 
 import { useDictStore } from './dict'
 import { useUserStore } from './user'
@@ -52,7 +57,8 @@ const tokenInfoState = isDoubleTokenMode
     }
 
 let appUpdateChecking = false
-let appUpdateChecked = false
+let lastAppUpdateCheckAt = 0
+const APP_UPDATE_CHECK_INTERVAL = 6 * 60 * 60 * 1000
 let refreshTokenPromise: Promise<IAuthLoginRes> | null = null
 
 export const useTokenStore = defineStore(
@@ -97,18 +103,24 @@ export const useTokenStore = defineStore(
      * 2. APK 下载完成后，会调起系统安装页面。
      * 3. 用户仍需要在系统安装页面确认安装。
      */
-    function downloadAndInstallAndroid(
-      downloadUrl: string,
-      versionRes?: AppLatestVersionVo,
-      localVersion?: ReturnType<typeof getLocalAppVersion>,
+    function openAndroidUpdatePage(
+      versionRes: AppLatestVersionVo,
+      localVersion: Awaited<ReturnType<typeof getLocalAppVersion>>,
     ) {
-      uni.$emit('app:openUpdatePopup', {
-        latestVersion: versionRes?.versionName,
-        localVersion: localVersion?.versionName,
-        updateTitle: versionRes?.updateTitle,
-        updateContent: versionRes?.updateContent,
-        downloadUrl,
-        forceUpdate: versionRes?.forceUpdate,
+      savePendingAppUpdate({
+        ...versionRes,
+        localVersionName: localVersion.versionName,
+        localVersionCode: localVersion.versionCode,
+        detectedAt: Date.now(),
+      })
+
+      const currentPage = getCurrentPages().at(-1)?.route
+      if (`/${currentPage}` === APP_UPDATE_PAGE)
+        return
+
+      uni.navigateTo({
+        url: APP_UPDATE_PAGE,
+        fail: error => console.error('打开 APP 更新页失败', error),
       })
     }
     /**
@@ -149,12 +161,17 @@ export const useTokenStore = defineStore(
      * iOS：自动打开 App Store 或配置的下载地址。
      */
     async function checkAppUpdate() {
-      if (appUpdateChecking || appUpdateChecked)
+      // #ifndef APP-PLUS
+      return
+      // #endif
+
+      if (appUpdateChecking)
+        return
+
+      if (Date.now() - lastAppUpdateCheckAt < APP_UPDATE_CHECK_INTERVAL)
         return
 
       appUpdateChecking = true
-      // 每次登录会话只请求一次最新版本，失败后也不在其他生命周期中重复请求。
-      appUpdateChecked = true
 
       try {
         const systemInfo = uni.getSystemInfoSync() as {
@@ -162,9 +179,12 @@ export const useTokenStore = defineStore(
           uniPlatform?: string
         }
 
-        // 允许所有运行环境执行版本检查，便于 H5/小程序等环境调试后端版本接口。
+        const localVersion = await getLocalAppVersion()
 
-        const localVersion = getLocalAppVersion()
+        if (!localVersion.versionCode) {
+          console.error('无法读取 APP versionCode，已取消本次更新检查', localVersion)
+          return
+        }
 
         const platform
           = systemInfo.platform?.toLowerCase() === 'ios'
@@ -180,6 +200,7 @@ export const useTokenStore = defineStore(
           // tenantId: 租户 ID,
           // appName: '外呼调度APP',
           })
+        lastAppUpdateCheckAt = Date.now()
 
         const localVersionCode = Number(localVersion.versionCode || 0)
         const latestVersionCode = Number(versionRes.versionCode || 0)
@@ -208,6 +229,9 @@ export const useTokenStore = defineStore(
           return
         }
 
+        if (isAppUpdateDismissed(latestVersionCode))
+          return
+
         console.log('检测到新版本，开始自动更新', {
           platform,
           localVersionName: localVersion.versionName,
@@ -223,7 +247,7 @@ export const useTokenStore = defineStore(
           return
         }
 
-        downloadAndInstallAndroid(versionRes.downloadUrl, versionRes, localVersion)
+        openAndroidUpdatePage(versionRes, localVersion)
       }
       catch (error) {
         console.error('APP 版本检查异常', error)
@@ -297,7 +321,7 @@ export const useTokenStore = defineStore(
       updateNowTime()
       clearAccessTokenExpireTime()
 
-      appUpdateChecked = false
+      lastAppUpdateCheckAt = 0
       refreshTokenPromise = null
       tokenInfo.value = { ...tokenInfoState }
 

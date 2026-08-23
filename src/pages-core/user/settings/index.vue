@@ -61,6 +61,7 @@ import { useDialog } from '@wot-ui/ui/components/wd-dialog'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { onMounted, ref } from 'vue'
 import { navigateBackPlus } from '@/utils'
+import { getLocalAppVersionName } from '@/utils/app'
 
 definePage({
   style: {
@@ -71,7 +72,7 @@ definePage({
 
 const toast = useToast()
 const dialog = useDialog()
-const version = ref('1.0.1') // 当前版本号
+const version = ref('-') // 当前版本号
 const storageSize = ref('') // 本地缓存大小
 
 /** 返回上一页 */
@@ -81,10 +82,7 @@ function handleBack() {
 
 /** 获取应用版本号 */
 function getAppVersion() {
-  // #ifdef APP-PLUS
-  const appInfo = uni.getSystemInfoSync()
-  version.value = appInfo.appVersion || '1.0.1'
-  // #endif
+  version.value = getLocalAppVersionName() || '-'
 }
 
 /** 获取本地缓存大小 */

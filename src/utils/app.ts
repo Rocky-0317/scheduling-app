@@ -1,42 +1,54 @@
 /**
  * 获取本地APP版本信息，区分H5调试/APP真机
  */
-export function getLocalAppVersion() {
-  // H5浏览器调试，模拟低版本本地包，方便测试更新弹窗
-  // #ifdef H5
-  return {
-    versionName: '1.0.1',
-    versionCode: 101,
+export async function getLocalAppVersion() {
+  const systemInfo = uni.getSystemInfoSync() as UniApp.GetSystemInfoResult & {
+    appVersion?: string
+    appVersionCode?: string | number
   }
-  // #endif
+  const fallback = {
+    versionName: systemInfo.appVersion || '',
+    versionCode: Number(systemInfo.appVersionCode || 0),
+  }
 
-  // APP模拟器/真机，读取打包manifest真实版本
   // #ifdef APP-PLUS
-  const info = (uni as any).getAppInfo?.() || {}
-  return {
-    versionName: info.versionName || '1.0.1',
-    versionCode: Number(info.versionCode) || 101,
-  }
+  return await new Promise<typeof fallback>((resolve) => {
+    let settled = false
+    const finish = (value = fallback) => {
+      if (settled)
+        return
+      settled = true
+      resolve(value)
+    }
+
+    const timeout = setTimeout(() => finish(), 3000)
+    plus.runtime.getProperty(plus.runtime.appid, (info) => {
+      clearTimeout(timeout)
+      finish({
+        versionName: info.version || fallback.versionName,
+        versionCode: Number(info.versionCode || fallback.versionCode),
+      })
+    })
+  })
   // #endif
 
-  return {
-    versionName: '1.0.1',
-    versionCode: 101,
-  }
+  return fallback
 }
 
 /**
  * 仅获取文字版本号
  */
 export function getLocalAppVersionName(): string {
-  return getLocalAppVersion().versionName
+  const info = uni.getSystemInfoSync() as UniApp.GetSystemInfoResult & { appVersion?: string }
+  return info.appVersion || ''
 }
 
 /**
  * 仅获取数字版本号
  */
 export function getLocalAppVersionCode(): number {
-  return getLocalAppVersion().versionCode
+  const info = uni.getSystemInfoSync() as UniApp.GetSystemInfoResult & { appVersionCode?: string | number }
+  return Number(info.appVersionCode || 0)
 }
 
 /**

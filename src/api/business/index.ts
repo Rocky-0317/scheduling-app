@@ -179,6 +179,7 @@ export interface AppLatestVersionVo {
   downloadUrl?: string
   apkFileName?: string
   apkFileSize?: number
+  packageType?: 'apk' | 'zip' | 'wgt'
   releaseTime?: string
 }
 

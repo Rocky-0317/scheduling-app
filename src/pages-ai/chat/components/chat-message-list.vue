@@ -115,7 +115,6 @@ function formatMessageTime(time: string) {
 <style lang="scss" scoped>
 .ai-typing {
   display: flex;
-  gap: 10rpx;
   align-items: center;
   height: 48rpx;
 
@@ -125,6 +124,10 @@ function formatMessageTime(time: string) {
     border-radius: 50%;
     background: #999;
     animation: ai-typing-bounce 1.2s infinite ease-in-out;
+  }
+
+  &-dot:not(:last-child) {
+    margin-right: 10rpx;
   }
 
   &-dot-second {

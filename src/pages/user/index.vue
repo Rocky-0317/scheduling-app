@@ -308,7 +308,6 @@ async function handleLogout() {
 
 <style lang="scss" scoped>
 .mine-page {
-  --menu-entry-icon-gap: 22rpx;
   min-height: 100vh;
   background: #f3f6fb;
 }
@@ -413,7 +412,6 @@ async function handleLogout() {
 .profile-panel {
   display: flex;
   align-items: center;
-  gap: 22rpx;
   margin-top: 22rpx;
   padding: 26rpx;
   border-radius: 26rpx;
@@ -421,6 +419,7 @@ async function handleLogout() {
 
 .avatar-shell {
   flex-shrink: 0;
+  margin-right: 22rpx;
   padding: 6rpx;
   border: 1rpx solid #e3ebf7;
   border-radius: 50%;
@@ -431,6 +430,7 @@ async function handleLogout() {
 .profile-copy {
   min-width: 0;
   flex: 1;
+  margin-right: 22rpx;
 }
 
 .profile-name {
@@ -508,7 +508,6 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   flex-direction: column;
-  gap: 12rpx;
   min-height: 130rpx;
   justify-content: center;
   border-radius: 22rpx;
@@ -523,6 +522,7 @@ async function handleLogout() {
   justify-content: center;
   width: 62rpx;
   height: 62rpx;
+  margin-bottom: 12rpx;
   border-radius: 18rpx;
 }
 
@@ -552,7 +552,6 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20rpx;
   min-height: 104rpx;
   border-top: 1rpx solid #edf2f8;
 }
@@ -562,7 +561,7 @@ async function handleLogout() {
   align-items: center;
   min-width: 0;
   flex: 1;
-  gap: var(--menu-entry-icon-gap);
+  margin-right: 20rpx;
 }
 
 .menu-icon {
@@ -572,6 +571,7 @@ async function handleLogout() {
   width: 68rpx;
   height: 68rpx;
   flex-shrink: 0;
+  margin-right: 22rpx;
   border-radius: 20rpx;
 }
 

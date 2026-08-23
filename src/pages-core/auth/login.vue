@@ -330,7 +330,6 @@ function toggleRemember() {
 .visual-brand {
   display: flex;
   align-items: center;
-  gap: 18rpx;
 }
 
 .brand-icon {
@@ -339,6 +338,7 @@ function toggleRemember() {
   justify-content: center;
   width: 68rpx;
   height: 68rpx;
+  margin-right: 18rpx;
   border: 1rpx solid #dce8ff;
   border-radius: 18rpx;
   background: linear-gradient(145deg, #f3f8ff, #ffffff);
@@ -507,7 +507,6 @@ function toggleRemember() {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 20rpx;
   margin-bottom: 34rpx;
 }
 
@@ -546,7 +545,6 @@ function toggleRemember() {
   min-width: 0;
   align-items: center;
   justify-content: center;
-  gap: 10rpx;
   height: 72rpx;
   border: 1rpx solid #e6edf7;
   border-radius: 28rpx;
@@ -561,6 +559,7 @@ function toggleRemember() {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-right: 10rpx;
 }
 
 :deep(.login-button-icon) {
@@ -630,9 +629,12 @@ function toggleRemember() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12rpx;
   margin: 36rpx 0 52rpx;
   color: #8090aa;
   font-size: 25rpx;
+}
+
+.safe-tip :deep(.wd-icon) {
+  margin-right: 12rpx;
 }
 </style>

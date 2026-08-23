@@ -167,9 +167,12 @@ function normalizeTitle(title: string) {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 28rpx;
   border-top: 2rpx solid #b7dbaa;
   padding-top: 30rpx;
+}
+
+.mind-map-branch:not(:last-child) {
+  margin-right: 28rpx;
 }
 
 .mind-map-branch {

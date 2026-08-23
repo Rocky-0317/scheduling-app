@@ -108,11 +108,14 @@ function handleReset() {
 .read-all-action {
   display: flex;
   align-items: center;
-  gap: 6rpx;
   flex-shrink: 0;
   color: #1890ff;
   font-size: 28rpx;
   font-weight: 650;
+}
+
+.read-all-action :deep(.wd-icon) {
+  margin-right: 6rpx;
 }
 
 :deep(.button-icon) {

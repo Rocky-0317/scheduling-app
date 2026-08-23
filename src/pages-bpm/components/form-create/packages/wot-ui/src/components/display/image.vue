@@ -47,13 +47,16 @@ function preview(index: number) {
 .fc-display-images {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  margin-right: -16rpx;
+  margin-bottom: -16rpx;
   padding: 20rpx 24rpx;
 }
 
 .fc-display-images__item {
   width: 160rpx;
   height: 160rpx;
+  margin-right: 16rpx;
+  margin-bottom: 16rpx;
   border-radius: 8rpx;
   background: #f2f3f5;
 }

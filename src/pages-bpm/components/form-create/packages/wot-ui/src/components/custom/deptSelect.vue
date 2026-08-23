@@ -471,11 +471,14 @@ function showLoadError(message: string) {
 .fc-dept-select__breadcrumb {
   display: flex;
   flex-shrink: 0;
-  gap: 12rpx;
   overflow-x: auto;
   padding: 0 24rpx 16rpx;
   background: #fff;
   white-space: nowrap;
+}
+
+.fc-dept-select__breadcrumb-item:not(:last-child) {
+  margin-right: 12rpx;
 }
 
 .fc-dept-select__breadcrumb-item {
@@ -573,11 +576,14 @@ function showLoadError(message: string) {
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 4rpx;
   padding: 0 24rpx;
   color: #6b7280;
   font-size: 26rpx;
   border-left: 1rpx solid #f0f0f0;
+}
+
+.fc-dept-select__children > :first-child {
+  margin-right: 4rpx;
 }
 
 .fc-dept-select__empty {

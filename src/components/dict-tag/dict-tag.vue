@@ -62,21 +62,34 @@ const dictTags = computed(() => {
       cssClass: dict.cssClass,
     }))
 })
+
+const tagListStyle = computed(() => ({
+  display: 'inline-flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  marginRight: `calc(0px - ${props.gutter})`,
+  marginBottom: `calc(0px - ${props.gutter})`,
+}))
+
+const tagItemStyle = computed(() => ({
+  marginRight: props.gutter,
+  marginBottom: props.gutter,
+}))
 </script>
 
 <template>
   <view
     v-if="dictTags.length"
-    :style="{ display: 'inline-flex', flexWrap: 'wrap', alignItems: 'center', gap: gutter }"
+    :style="tagListStyle"
   >
-    <wd-tag
-      v-for="(tag, index) in dictTags"
-      :key="index"
-      :type="tag.tagType"
-      :variant="plain ? 'plain' : undefined"
-      :custom-class="tag.cssClass"
-    >
-      {{ tag.label }}
-    </wd-tag>
+    <view v-for="(tag, index) in dictTags" :key="index" :style="tagItemStyle">
+      <wd-tag
+        :type="tag.tagType"
+        :variant="plain ? 'plain' : undefined"
+        :custom-class="tag.cssClass"
+      >
+        {{ tag.label }}
+      </wd-tag>
+    </view>
   </view>
 </template>

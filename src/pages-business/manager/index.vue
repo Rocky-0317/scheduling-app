@@ -1204,11 +1204,14 @@ onMounted(async () => {
 .record-label {
   display: flex;
   align-items: center;
-  gap: 10rpx;
   width: 150rpx;
   flex-shrink: 0;
   color: #94a3b8;
   margin-right: 16rpx;
+}
+
+.record-label :deep(.wd-icon) {
+  margin-right: 10rpx;
 }
 
 .outbound-record-line {
@@ -1408,11 +1411,11 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   min-height: 64rpx;
-  gap: 20rpx;
 }
 
 .detail-label {
   flex-shrink: 0;
+  margin-right: 20rpx;
   color: #94a3b8;
   font-size: 26rpx;
 }
@@ -1588,11 +1591,12 @@ onMounted(async () => {
 .person-radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx; // 使用gap统一间距，代替margin，避免重叠错乱
+  margin-right: -16rpx;
+  margin-bottom: -16rpx;
 }
 
 .person-radio-group :deep(.wd-radio) {
-  margin: 0 !important; // 清除原有margin，防止挤压重叠
+  margin: 0 16rpx 16rpx 0 !important;
   box-sizing: border-box;
   // 消除模糊核心：禁止transform缩放，防止半像素
   transform: translateZ(0) !important;

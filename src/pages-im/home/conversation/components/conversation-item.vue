@@ -149,7 +149,6 @@ function openChat() {
 .conversation-row {
   display: flex;
   align-items: center;
-  gap: 22rpx;
   padding-left: 28rpx;
   background: #fff;
 
@@ -160,6 +159,10 @@ function openChat() {
   &.is-top {
     background: #f5f5f5;
   }
+}
+
+.conversation-row > view:first-child {
+  margin-right: 22rpx;
 }
 
 .conversation-content {

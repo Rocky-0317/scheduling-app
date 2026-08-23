@@ -336,10 +336,13 @@ onUnload(() => {
 .version-row {
   display: flex;
   justify-content: center;
-  gap: 18rpx;
   margin-top: 20rpx;
   color: #8a96a8;
   font-size: 25rpx;
+}
+
+.version-row > text:not(:last-child) {
+  margin-right: 18rpx;
 }
 .version-line {
   color: #b5bdc9;

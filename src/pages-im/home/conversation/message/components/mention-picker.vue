@@ -94,8 +94,11 @@ watch(visible, (value) => {
 .mention-member {
   display: flex;
   align-items: center;
-  gap: 20rpx;
   padding: 20rpx 24rpx;
   border-top: 1rpx solid #f2f3f5;
+}
+
+.mention-member > :first-child {
+  margin-right: 20rpx;
 }
 </style>

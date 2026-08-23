@@ -789,8 +789,11 @@ onBeforeUnmount(() => {
 .fc-sub-form {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
   width: 100%;
+}
+
+.fc-sub-form__item:not(:last-child) {
+  margin-bottom: 20rpx;
 }
 
 .fc-sub-form__item {
@@ -804,7 +807,6 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16rpx;
   min-height: 80rpx;
   padding: 0 20rpx;
   background: #fff;
@@ -815,8 +817,12 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   flex: 1;
-  gap: 12rpx;
+  margin-right: 16rpx;
   min-width: 0;
+}
+
+.fc-sub-form__header-main > :not(:last-child) {
+  margin-right: 12rpx;
 }
 
 .fc-sub-form__title {
@@ -839,7 +845,10 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 8rpx;
+}
+
+.fc-sub-form__actions > :not(:last-child) {
+  margin-right: 8rpx;
 }
 
 .fc-sub-form__body {

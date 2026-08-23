@@ -113,8 +113,12 @@ function isPackageIcon(menu: MenuItem) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20rpx;
   padding: 26rpx;
+}
+
+.category-header > view:first-child {
+  min-width: 0;
+  margin-right: 20rpx;
 }
 
 .header-title {

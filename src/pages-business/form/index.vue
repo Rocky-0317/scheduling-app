@@ -879,12 +879,14 @@ onMounted(async () => {
 .image-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 16rpx;
+  margin-right: -16rpx;
   margin-bottom: 20rpx;
 }
 .image-item {
   width: 200rpx;
   height: 200rpx;
+  margin-right: 16rpx;
+  margin-bottom: 16rpx;
   border-radius: 8rpx;
   overflow: hidden;
   background: #eee;
@@ -916,10 +918,17 @@ onMounted(async () => {
 .certificate-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx;
+  margin-right: -20rpx;
+  margin-bottom: -20rpx;
   padding: 8rpx;
   width: 100%;
   box-sizing: border-box;
+}
+
+.certificate-media-item,
+.certificate-add-tile {
+  margin-right: 20rpx;
+  margin-bottom: 20rpx;
 }
 
 .certificate-item {
@@ -944,10 +953,13 @@ onMounted(async () => {
 .certificate-video-thumb {
   display: flex;
   flex-direction: column;
-  gap: 8rpx;
   align-items: center;
   justify-content: center;
   background: #111827;
+}
+
+.certificate-video-thumb :deep(.wd-icon) {
+  margin-bottom: 8rpx;
 }
 
 .certificate-video-text {

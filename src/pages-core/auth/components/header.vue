@@ -39,7 +39,6 @@ const title = import.meta.env.VITE_APP_TITLE
 .brand-row {
   display: flex;
   align-items: center;
-  gap: 20rpx;
 }
 
 .logo-shell {
@@ -49,6 +48,7 @@ const title = import.meta.env.VITE_APP_TITLE
   width: 104rpx;
   height: 104rpx;
   flex-shrink: 0;
+  margin-right: 20rpx;
   border: 1rpx solid rgba(255, 255, 255, 0.82);
   border-radius: 30rpx;
   background: rgba(255, 255, 255, 0.84);
@@ -79,7 +79,6 @@ const title = import.meta.env.VITE_APP_TITLE
 .process-strip {
   display: flex;
   align-items: center;
-  gap: 12rpx;
   margin-top: 28rpx;
   padding: 18rpx 20rpx;
   border: 1rpx solid rgba(255, 255, 255, 0.78);
@@ -96,6 +95,7 @@ const title = import.meta.env.VITE_APP_TITLE
   view {
     height: 2rpx;
     flex: 1;
+    margin: 0 12rpx;
     background: #c8d9f3;
   }
 }

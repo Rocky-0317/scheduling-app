@@ -734,8 +734,11 @@ function isEmptyValue(value: any) {
 
   &__toolbar-actions {
     display: flex;
-    gap: 16rpx;
     padding: 0 24rpx 20rpx;
+  }
+
+  &__toolbar-actions > :not(:last-child) {
+    margin-right: 16rpx;
   }
 
   &__body {

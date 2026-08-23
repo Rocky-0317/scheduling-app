@@ -61,7 +61,6 @@ function getIconStyle(menu: MenuItem) {
 
 <style scoped lang="scss">
 .category-page {
-  --category-entry-icon-gap: 22rpx;
   min-height: 100vh;
   background: #f3f6fb;
 }
@@ -86,7 +85,6 @@ function getIconStyle(menu: MenuItem) {
 .category-header {
   display: flex;
   align-items: center;
-  gap: 20rpx;
   padding: 26rpx;
 }
 
@@ -103,6 +101,7 @@ function getIconStyle(menu: MenuItem) {
 .header-icon {
   width: 82rpx;
   height: 82rpx;
+  margin-right: 22rpx;
 }
 
 .header-copy,
@@ -141,7 +140,7 @@ function getIconStyle(menu: MenuItem) {
 .row-icon {
   width: 72rpx;
   height: 72rpx;
-  margin-right: var(--category-entry-icon-gap);
+  margin-right: 22rpx;
 }
 
 .row-title {

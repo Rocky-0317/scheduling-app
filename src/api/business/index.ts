@@ -128,7 +128,18 @@ export interface OutboundRecord {
   isSuccess?: string
   cardNumber?: string
   imageUrls?: string[]
+  certificateFiles?: OutboundRecordCertificateFile[]
   createTime?: string
+}
+
+export interface OutboundRecordCertificateFile {
+  id?: number
+  fileId?: number
+  url?: string
+  fileUrl?: string
+  fileName?: string
+  name?: string
+  mediaType?: string
 }
 
 export interface OutboundRecordTimeoutConfig {
@@ -251,6 +262,34 @@ export const businessApi = {
         })
       }),
     ))
+  },
+  uploadOutboundRecordFiles(id: number, filePaths: string[], mediaType: 'image' | 'video') {
+    return Promise.all(filePaths.map(filePath =>
+      new Promise((resolve, reject) => {
+        uni.uploadFile({
+          url: `/business/outboundRecord/${id}/files`,
+          name: 'files',
+          filePath,
+          formData: { mediaType },
+          success: (res) => {
+            try {
+              const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+              if (res.statusCode >= 200 && res.statusCode < 300 && (data.code === 0 || data.code === 200)) {
+                resolve(data)
+              } else {
+                reject(data)
+              }
+            } catch (error) {
+              reject(error)
+            }
+          },
+          fail: reject,
+        })
+      }),
+    ))
+  },
+  deleteOutboundRecordFiles(id: number, fileIds: Array<number | string>) {
+    return http.delete(`/business/outboundRecord/${id}/files/${fileIds.join(',')}`)
   },
   getTimeoutConfig() {
     return http.get<OutboundRecordTimeoutConfig>('/business/outboundRecord/timeout/config')

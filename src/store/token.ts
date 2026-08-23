@@ -52,7 +52,6 @@ const tokenInfoState = isDoubleTokenMode
     }
 
 let appUpdateChecking = false
-let appUpdateDownloading = false
 let refreshTokenPromise: Promise<IAuthLoginRes> | null = null
 
 export const useTokenStore = defineStore(
@@ -97,145 +96,20 @@ export const useTokenStore = defineStore(
      * 2. APK 下载完成后，会调起系统安装页面。
      * 3. 用户仍需要在系统安装页面确认安装。
      */
-    function downloadAndInstallAndroid(downloadUrl: string) {
-      if (appUpdateDownloading)
-        return
-
-      appUpdateDownloading = true
-
-      let lastProgress = -1
-
-      uni.showLoading({
-        title: '准备下载更新',
-        mask: true,
-      })
-
-      const downloadTask = uni.downloadFile({
-        url: downloadUrl,
-
-        success: (downloadRes) => {
-          uni.hideLoading()
-
-          if (downloadRes.statusCode !== 200) {
-            console.error('APK 下载失败：HTTP 状态码异常', downloadRes)
-
-            uni.showToast({
-              title: '更新包下载失败',
-              icon: 'none',
-              duration: 2500,
-            })
-
-            appUpdateDownloading = false
-            return
-          }
-
-          if (!downloadRes.tempFilePath) {
-            console.error('APK 下载失败：临时文件路径为空', downloadRes)
-
-            uni.showToast({
-              title: '更新包文件无效',
-              icon: 'none',
-              duration: 2500,
-            })
-
-            appUpdateDownloading = false
-            return
-          }
-
-          console.log('APK 下载完成，准备安装', {
-            tempFilePath: downloadRes.tempFilePath,
-          })
-
-          // #ifdef APP-PLUS
-          plus.runtime.install(
-            downloadRes.tempFilePath,
-            {
-              force: false,
-            },
-            () => {
-              console.log('新版 APP 安装完成')
-
-              appUpdateDownloading = false
-
-              uni.showToast({
-                title: '更新完成，正在重启',
-                icon: 'none',
-                duration: 1500,
-              })
-
-              setTimeout(() => {
-                plus.runtime.restart()
-              }, 1500)
-            },
-            (installError) => {
-              console.error('安装更新失败', installError)
-
-              appUpdateDownloading = false
-
-              uni.showToast({
-                title: '安装更新失败',
-                icon: 'none',
-                duration: 2500,
-              })
-            },
-          )
-          // #endif
-
-          // #ifndef APP-PLUS
-          appUpdateDownloading = false
-
-          console.warn('当前环境不是 APP-PLUS，无法安装 APK')
-
-          uni.showToast({
-            title: '当前环境不支持安装',
-            icon: 'none',
-            duration: 2500,
-          })
-          // #endif
-        },
-
-        fail: (downloadError) => {
-          uni.hideLoading()
-
-          console.error('下载更新包失败', downloadError)
-
-          appUpdateDownloading = false
-
-          uni.showToast({
-            title: '更新包下载失败',
-            icon: 'none',
-            duration: 2500,
-          })
-        },
-
-        complete: () => {
-          uni.hideLoading()
-        },
-      })
-
-      downloadTask.onProgressUpdate((progressInfo) => {
-        const progress = Number(progressInfo.progress || 0)
-
-        // 防止同一个进度重复刷新 loading。
-        if (progress === lastProgress)
-          return
-
-        lastProgress = progress
-
-        uni.showLoading({
-          title: `正在更新 ${progress}%`,
-          mask: true,
-        })
-
-        console.log('更新包下载进度', {
-          progress,
-          totalBytesWritten: progressInfo.totalBytesWritten,
-          totalBytesExpectedToWrite:
-          progressInfo.totalBytesExpectedToWrite,
-        })
+    function downloadAndInstallAndroid(
+      downloadUrl: string,
+      versionRes?: AppLatestVersionVo,
+      localVersion?: ReturnType<typeof getLocalAppVersion>,
+    ) {
+      uni.$emit('app:openUpdatePopup', {
+        latestVersion: versionRes?.versionName,
+        localVersion: localVersion?.versionName,
+        updateTitle: versionRes?.updateTitle,
+        updateContent: versionRes?.updateContent,
+        downloadUrl,
+        forceUpdate: versionRes?.forceUpdate,
       })
     }
-
     /**
      * iOS 打开 App Store 或企业分发下载地址。
      */
@@ -274,7 +148,7 @@ export const useTokenStore = defineStore(
      * iOS：自动打开 App Store 或配置的下载地址。
      */
     async function checkAppUpdate() {
-      if (appUpdateChecking || appUpdateDownloading)
+      if (appUpdateChecking)
         return
 
       appUpdateChecking = true
@@ -346,7 +220,7 @@ export const useTokenStore = defineStore(
           return
         }
 
-        downloadAndInstallAndroid(versionRes.downloadUrl)
+        downloadAndInstallAndroid(versionRes.downloadUrl, versionRes, localVersion)
       }
       catch (error) {
         console.error('APP 版本检查异常', error)

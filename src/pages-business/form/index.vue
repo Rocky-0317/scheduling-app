@@ -1,51 +1,104 @@
 <template>
   <view class="yd-page-container business-form">
     <wd-navbar :title="pageTitle" left-arrow placeholder safe-area-inset-top fixed @click-left="handleBack" />
-    <scroll-view scroll-y class="min-h-0 flex-1">
+    <scroll-view scroll-y scroll-with-animation class="business-form__scroll min-h-0 flex-1">
       <wd-form ref="formRef" :model="formData" :schema="formSchema">
         <wd-cell-group border>
           <!-- 增加兜底：visibleFields为空不渲染循环，field加可选链?.key -->
           <template v-if="visibleFields.length">
             <template v-for="field in visibleFields" :key="field?.key">
-              <view v-if="field.type === 'imageUpload'" class="image-view-wrap">
-                <view class="image-label">
-                  {{ getDisplayFieldLabel(field) }}
-                </view>
-                <view class="image-list">
-                  <view
-                    v-for="imgUrl in imgList(formData[field.key])"
-                    :key="imgUrl"
-                    class="image-item"
-                    @click="previewImage(imgUrl)"
-                  >
-                    <image :src="getImageFullUrl(imgUrl)" mode="aspectFill" />
+              <template v-if="field.type === 'imageUpload'">
+                <wd-form-item
+                  :key="`${field.key}-images-${certificateLayoutKey}`"
+                  :title="getDisplayFieldLabel(field)"
+                  :title-width="formLabelWidth"
+                  :prop="field.key"
+                  custom-class="image-form-item"
+                >
+                  <view class="certificate-wrap">
+                    <view v-if="showCertificateMedia && (certificateImages.length || canUploadCertificateFile)" class="certificate-list">
+                      <view
+                        v-for="file in certificateImages"
+                        :key="file.key"
+                        class="certificate-item certificate-media-item"
+                        @click="previewCertificateImage(file)"
+                      >
+                        <image :src="getImageFullUrl(file.url)" mode="aspectFill" />
+                        <view v-if="canDeleteCertificateFile(file)" class="certificate-delete" @click.stop="deleteCertificateFile(file)">
+                          <wd-icon name="close" size="22rpx" color="#fff" />
+                        </view>
+                      </view>
+                      <view v-if="canUploadCertificateFile" class="certificate-add-tile" @click="chooseCertificateImages">
+                        <text class="certificate-add-icon">+</text>
+                      </view>
+                    </view>
+                    <view v-if="certificateImages.length === 0 && !canUploadCertificateFile" class="image-empty">
+                      暂无凭证图片
+                    </view>
                   </view>
-                  <view v-if="imgList(formData[field.key]).length === 0" class="image-empty">
-                    暂无凭证图片
+                </wd-form-item>
+                <wd-form-item
+                  v-if="certificateVideos.length || canUploadCertificateFile"
+                  :key="`${field.key}-videos-${certificateLayoutKey}`"
+                  title="凭证视频"
+                  :title-width="formLabelWidth"
+                  custom-class="image-form-item"
+                >
+                  <view class="certificate-wrap">
+                    <view v-if="showCertificateMedia" class="certificate-list">
+                      <view
+                        v-for="file in certificateVideos"
+                        :key="file.key"
+                        class="certificate-item certificate-media-item"
+                        @click="previewCertificateVideo(file)"
+                      >
+                        <view class="certificate-video-thumb">
+                          <wd-icon name="play-circle" size="54rpx" color="#fff" />
+                          <text class="certificate-video-text">视频</text>
+                        </view>
+                        <view v-if="canDeleteCertificateFile(file)" class="certificate-delete" @click.stop="deleteCertificateFile(file)">
+                          <wd-icon name="close" size="22rpx" color="#fff" />
+                        </view>
+                      </view>
+                      <view v-if="canUploadCertificateFile" class="certificate-add-tile" @click="chooseCertificateVideo">
+                        <text class="certificate-add-icon">+</text>
+                      </view>
+                    </view>
+                    <view v-if="certificateVideos.length === 0 && !canUploadCertificateFile" class="image-empty">
+                      暂无凭证视频
+                    </view>
                   </view>
-                </view>
-              </view>
+                </wd-form-item>
+              </template>
               <yd-form-picker
-                v-else-if="field.type === 'picker' || field.type === 'multiPicker'"
+                v-else-if="field.type === 'picker' || field.type === 'multiPicker' || (field.type === 'radio' && radioAsPickerKeys.includes(field.key))"
                 v-model="formData[field.key]"
                 :label="getDisplayFieldLabel(field)"
-                label-width="190rpx"
+                :label-width="formLabelWidth"
                 :prop="field.key"
                 :placeholder="`请选择${getDisplayFieldLabel(field)}`"
                 :columns="getPickerOptions(field)"
                 :type="field.type === 'multiPicker' ? 'checkbox' : 'radio'"
                 :filterable="true"
-                :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
+                :disabled="isFieldDisabled(field)"
                 :before-open="() => handlePickerOpen(field)"
+                @open="handlePickerOverlayOpen"
+                @close="handlePickerOverlayClose"
                 @confirm="value => handlePickerConfirm(field, value)"
               />
-              <wd-form-item v-else :title="getDisplayFieldLabel(field)" title-width="190rpx" :prop="field.key">
+              <wd-form-item
+                v-else
+                :title="getDisplayFieldLabel(field)"
+                :title-width="formLabelWidth"
+                :prop="field.key"
+                :custom-class="field.type === 'textarea' ? 'business-textarea-item' : ''"
+              >
                 <view class="input-wrap">
                   <wd-radio-group
                     v-if="field.type === 'radio'"
                     v-model="formData[field.key]"
                     type="button"
-                    :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
+                    :disabled="isFieldDisabled(field)"
                   >
                     <wd-radio v-for="option in getFieldOptions(field)" :key="option.value" :value="option.value">
                       {{ option.label }}
@@ -56,14 +109,14 @@
                     v-model="formData[field.key]"
                     :min="0"
                     :precision="field.key === 'price' ? 2 : 0"
-                    :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
+                    :disabled="isFieldDisabled(field)"
                     clearable="false"
                   />
                   <wd-input
                     v-else-if="field.type === 'date'"
                     :model-value="formatDateText(formData[field.key])"
                     :placeholder="`请选择${getDisplayFieldLabel(field)}`"
-                    :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
+                    :disabled="isFieldDisabled(field)"
                     readonly
                     clearable="false"
                     @click="openDatePicker(field.key)"
@@ -72,16 +125,16 @@
                     v-else-if="field.type === 'textarea'"
                     v-model="formData[field.key]"
                     :placeholder="`请输入${getDisplayFieldLabel(field)}`"
-                    :disabled="isView || field.readonly || isFieldReadonlyByRole(field.key)"
+                    :disabled="isFieldDisabled(field)"
                     :maxlength="1000"
-                    :auto-height="isView"
+                    auto-height
                     clearable="false"
                   />
                   <wd-input
                     v-else
                     v-model="formData[field.key]"
                     :placeholder="`请输入${getDisplayFieldLabel(field)}`"
-                    :disabled="isView || field.readonly || (field.key === 'userName' && !!props.id) || isFieldReadonlyByRole(field.key)"
+                    :disabled="isFieldDisabled(field)"
                     clearable="false"
                   />
                 </view>
@@ -141,10 +194,23 @@ const datePickerVisible = ref(false)
 const datePickerValue = ref<number>(Date.now())
 const activeDateKey = ref('')
 const loadingDetail = ref(false)
+const uploadingCertificateType = ref<'image' | 'video' | ''>('')
 const roleOptions = ref<Array<{ label: string, value: number, roleKey: string, disabled: boolean }>>([])
 const businessTypeOptions = ref<Array<{ label: string, value: string }>>([])
 const businessIsSuccessOptions = ref<Array<{ label: string, value: string }>>([])
 const gridOptions = ref<Array<{ label: string, value: string }>>([])
+const formLabelWidth = '200rpx'
+const pickerOverlayOpen = ref(false)
+const certificateLayoutVersion = ref(0)
+
+interface CertificateFileView {
+  key: string
+  id?: number | string
+  url: string
+  mediaType: string
+}
+
+const CERTIFICATE_VIDEO_PREVIEW_URL_KEY = 'business:certificate-preview-video-url'
 
 // 全部computed前置定义，增加空数组兜底，防止undefined
 const config = computed(() => getModuleConfig(props.module) || { formFields: [], title: '', readonly: false, key: '' })
@@ -152,10 +218,35 @@ const isView = computed(() => props.mode === 'view' || config.value.readonly)
 const isEdit = computed(() => !!props.id)
 const isPersonnelModule = computed(() => config.value.key === 'outboundPersonnel')
 const isSalesPerson = computed(() => {
-  const roles = userStore.userInfo?.roles || []
-  return roles.some(role => role.roleKey === 'salesperson')
+  const roleKeys = userStore.roles || []
+  const userRoles = (userStore.userInfo as any)?.roles || []
+  return roleKeys.includes('salesperson')
+    || userRoles.some((role: any) => role?.roleKey === 'salesperson' || role === 'salesperson')
 })
-const salesEditableKeys = ['isSuccess', 'cardNumber', 'imageUrls', 'remark']
+const salesEditableKeys = [
+  'isSuccess',
+  'cardNumber',
+  'imageUrls',
+  'remark',
+  'address',
+  'deliveryAddress',
+  'shippingAddress',
+  'dispatchAddress',
+  'followUp',
+  'followSituation',
+  'followStatus',
+  'trackStatus',
+  'followRemark',
+]
+const radioAsPickerKeys = [
+  'assignmentStatus',
+  'dispatchStatus',
+  'dispatchState',
+  'assignStatus',
+  'distributionStatus',
+  'status',
+  'sendStatus',
+]
 const selectedRole = computed(() => roleOptions.value.find(item => String(item.value) === String(formData.value.roleId)))
 const needShowGridType = computed(() => {
   if (!isPersonnelModule.value)
@@ -177,6 +268,17 @@ const showCardNumberField = computed(() => {
 })
 
 // 核心修复：过滤时增加 field 存在判断，过滤掉undefined字段
+const certificateFiles = computed(() => normalizeCertificateFiles(formData.value.certificateFiles, formData.value.imageUrls))
+const certificateImages = computed(() => certificateFiles.value.filter(file => isImageCertificateFile(file)))
+const certificateVideos = computed(() => certificateFiles.value.filter(file => isVideoCertificateFile(file)))
+const canUploadCertificateFile = computed(() =>
+  !isView.value && !!props.id && hasPerm(['business:outboundRecord:uploadImage']),
+)
+const showCertificateMedia = computed(() => !pickerOverlayOpen.value)
+const certificateLayoutKey = computed(() =>
+  `${certificateLayoutVersion.value}-${showCardNumberField.value ? 'card' : 'no-card'}-${certificateImages.value.length}-${certificateVideos.value.length}`,
+)
+
 const visibleFields = computed(() => {
   const sourceList = config.value.formFields || []
   let fieldList = sourceList.filter((field): field is BusinessField => !!field && !!field.key)
@@ -235,6 +337,16 @@ const formSchema = computed(() => createFormSchema(
 ))
 
 // 工具函数
+function isFieldDisabled(field: BusinessField): boolean {
+  if (isView.value)
+    return true
+  if (field.key === 'userName' && !!props.id)
+    return true
+  if (isSalesPerson.value && salesEditableKeys.includes(field.key))
+    return false
+  return field.readonly || isFieldReadonlyByRole(field.key)
+}
+
 function isFieldReadonlyByRole(fieldKey: string): boolean {
   if (!isSalesPerson.value)
     return false
@@ -290,6 +402,7 @@ async function loadDetail() {
       nextData.grid = normalizeMultiValue(detail?.grid)
     }
     nextData.imageUrls = normalizeMultiValue(detail?.imageUrls)
+    nextData.certificateFiles = Array.isArray(detail?.certificateFiles) ? detail.certificateFiles : []
     formData.value = nextData
     await nextTick()
   } finally {
@@ -370,12 +483,55 @@ function formatDateText(value: unknown) {
     return ''
   return formatDateValue(value as string)
 }
+
 function normalizeMultiValue(value?: string | string[]) {
   if (Array.isArray(value))
     return value.filter(Boolean)
   if (value === undefined || value === null || value === '')
     return []
   return String(value).split(',').map(item => item.trim()).filter(Boolean)
+}
+
+function normalizeCertificateFiles(rawFiles: any, fallbackImageUrls?: string | string[]): CertificateFileView[] {
+  const fileList = Array.isArray(rawFiles) ? rawFiles : []
+  const normalized = fileList.map((file, index) => {
+    const url = typeof file === 'string'
+      ? file
+      : String(file?.url ?? file?.fileUrl ?? file?.filePath ?? file?.path ?? file?.ossUrl ?? '')
+    if (!url)
+      return undefined
+    const id = typeof file === 'string' ? undefined : file?.fileId ?? file?.id
+    const mediaType = typeof file === 'string' ? 'image' : String(file?.mediaType ?? file?.fileType ?? '')
+    return {
+      key: `${id ?? url}-${index}`,
+      id,
+      mediaType,
+      url,
+    }
+  }).filter((file): file is CertificateFileView => !!file)
+
+  const existingUrls = new Set(normalized.map(file => file.url))
+  normalizeMultiValue(fallbackImageUrls).forEach((url, index) => {
+    if (existingUrls.has(url))
+      return
+    normalized.push({
+      key: `image-url-${index}-${url}`,
+      mediaType: 'image',
+      url,
+    })
+  })
+
+  return normalized
+}
+
+function isVideoCertificateFile(file: CertificateFileView) {
+  const type = file.mediaType.toLowerCase()
+  return type.includes('video') || /\.(?:mp4|mov|m4v|webm|avi)$/i.test(file.url)
+}
+
+function isImageCertificateFile(file: CertificateFileView) {
+  const type = file.mediaType.toLowerCase()
+  return type.includes('image') || (!isVideoCertificateFile(file) && /\.(?:png|jpe?g|gif|webp|bmp)$/i.test(file.url))
 }
 function isTerminalBusinessType() {
   const typeList = normalizeMultiValue(formData.value.businessType).map(item => String(item))
@@ -406,6 +562,107 @@ function previewImage(url: string) {
   const imageUrl = getImageFullUrl(url)
   uni.previewImage({ urls: [imageUrl], current: imageUrl })
 }
+
+function previewCertificateImage(file: CertificateFileView) {
+  const urls = certificateImages.value.map(item => getImageFullUrl(item.url))
+  const current = getImageFullUrl(file.url)
+  uni.previewImage({ urls, current })
+}
+
+function previewCertificateVideo(file: CertificateFileView) {
+  const url = getImageFullUrl(file.url)
+  if (!url) {
+    toast.warning('视频地址为空')
+    return
+  }
+  uni.setStorageSync(CERTIFICATE_VIDEO_PREVIEW_URL_KEY, url)
+  uni.navigateTo({ url: '/pages-business/video-preview/index' })
+}
+
+function canDeleteCertificateFile(file: CertificateFileView) {
+  return !isView.value && !!props.id && file.id !== undefined && file.id !== null && file.id !== ''
+}
+
+async function deleteCertificateFile(file: CertificateFileView) {
+  if (!canDeleteCertificateFile(file))
+    return
+  const { confirm } = await uni.showModal({
+    title: '删除确认',
+    content: `确定删除该${isVideoCertificateFile(file) ? '凭证视频' : '凭证图片'}吗？`,
+  })
+  if (!confirm)
+    return
+  await businessApi.deleteOutboundRecordFiles(Number(props.id), [file.id as number | string])
+  removeCertificateFileFromLocal(file)
+  toast.success('删除成功')
+}
+
+function removeCertificateFileFromLocal(file: CertificateFileView) {
+  if (Array.isArray(formData.value.certificateFiles)) {
+    formData.value.certificateFiles = formData.value.certificateFiles.filter((item: any) => {
+      const id = typeof item === 'string' ? undefined : item?.fileId ?? item?.id
+      const url = typeof item === 'string' ? item : item?.url ?? item?.fileUrl ?? item?.filePath ?? item?.path ?? item?.ossUrl
+      if (file.id !== undefined && file.id !== null)
+        return String(id) !== String(file.id)
+      return url !== file.url
+    })
+  }
+  formData.value.imageUrls = normalizeMultiValue(formData.value.imageUrls).filter(url => url !== file.url)
+}
+
+function chooseCertificateImages() {
+  if (!canUploadCertificateFile.value || uploadingCertificateType.value)
+    return
+  uni.chooseImage({
+    count: 9,
+    sizeType: ['compressed'],
+    success: async (res) => {
+      const filePaths = Array.isArray(res.tempFilePaths) ? res.tempFilePaths : [res.tempFilePaths]
+      await uploadCertificateFiles(filePaths, 'image')
+    },
+  })
+}
+
+function chooseCertificateVideo() {
+  if (!canUploadCertificateFile.value || uploadingCertificateType.value)
+    return
+  uni.chooseVideo({
+    sourceType: ['album', 'camera'],
+    compressed: true,
+    success: async (res: any) => {
+      if (!res.tempFilePath)
+        return
+      await uploadCertificateFiles([res.tempFilePath], 'video')
+    },
+  })
+}
+
+async function uploadCertificateFiles(filePaths: string[], mediaType: 'image' | 'video') {
+  if (!props.id || filePaths.length === 0)
+    return
+  uploadingCertificateType.value = mediaType
+  uni.showLoading({ title: mediaType === 'video' ? '视频上传中' : '图片上传中', mask: true })
+  try {
+    await businessApi.uploadOutboundRecordFiles(Number(props.id), filePaths, mediaType)
+    toast.success('上传成功')
+    await loadDetail()
+  } catch (error) {
+    console.error('上传凭证文件失败:', error)
+    toast.error(getCertificateUploadErrorMessage(error))
+  } finally {
+    uploadingCertificateType.value = ''
+    uni.hideLoading()
+  }
+}
+
+function getCertificateUploadErrorMessage(error: unknown) {
+  if (error && typeof error === 'object') {
+    const info = error as Record<string, any>
+    return info.msg || info.message || info.errMsg || '上传失败，请重试'
+  }
+  return '上传失败，请重试'
+}
+
 function getPickerOptions(field: BusinessField) {
   return getFieldOptions(field)
 }
@@ -423,6 +680,17 @@ function getFieldOptions(field: BusinessField) {
 function handlePickerOpen(field: BusinessField) {
   if (field.source === 'grid')
     void loadGridOptions(true)
+}
+function handlePickerOverlayOpen() {
+  pickerOverlayOpen.value = true
+}
+async function handlePickerOverlayClose() {
+  pickerOverlayOpen.value = false
+  await nextTick()
+  refreshCertificateLayout()
+}
+function refreshCertificateLayout() {
+  certificateLayoutVersion.value += 1
 }
 function handlePickerConfirm(field: BusinessField, value: any) {
   formData.value[field.key] = value
@@ -515,20 +783,61 @@ onMounted(async () => {
 
 <style scoped lang="scss">
 .business-form {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  flex-direction: column;
   background: #f5f7fb;
 }
+.business-form__scroll {
+  box-sizing: border-box;
+}
 :deep(.wd-cell-group) {
-  margin: 20rpx 24rpx;
+  margin: 20rpx 24rpx 176rpx;
+  margin-bottom: calc(176rpx + constant(safe-area-inset-bottom));
+  margin-bottom: calc(176rpx + env(safe-area-inset-bottom));
   overflow: hidden;
   border-radius: 8rpx;
 }
 :deep(.wd-cell) {
   align-items: flex-start;
 }
+:deep(.wd-cell__left) {
+  position: relative !important;
+  box-sizing: border-box !important;
+  padding-left: 28rpx !important;
+  align-items: center !important;
+}
 :deep(.wd-cell__title) {
-  flex: 0 0 190rpx;
+  padding-left: 0 !important;
+  box-sizing: border-box !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+:deep(.wd-cell__required--left) {
+  position: absolute !important;
+  left: 0rpx !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 20rpx !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  pointer-events: none !important;
 }
 :deep(.wd-cell__value) {
+  box-sizing: border-box;
+  min-width: 0;
+  padding-left: 24rpx;
+}
+:deep(.wd-cell__value .wd-input),
+:deep(.wd-cell__value .wd-textarea),
+.input-wrap {
+  width: 100%;
   min-width: 0;
 }
 :deep(.wd-textarea) {
@@ -537,6 +846,19 @@ onMounted(async () => {
 :deep(.wd-textarea__inner) {
   min-height: 48rpx;
   line-height: 1.5;
+}
+:deep(.business-textarea-item .wd-cell__left),
+:deep(.business-textarea-item .wd-cell__value) {
+  align-items: flex-start !important;
+}
+:deep(.business-textarea-item .wd-textarea) {
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+:deep(.business-textarea-item .wd-textarea__inner) {
+  min-height: 36rpx !important;
+  height: auto !important;
+  line-height: 1.5 !important;
 }
 :deep(.button-icon) {
   margin-right: 12rpx;
@@ -577,6 +899,91 @@ onMounted(async () => {
   color: #999;
   padding: 40rpx 0;
 }
+
+:deep(.image-form-item) {
+  align-items: flex-start !important;
+}
+
+:deep(.image-form-item .wd-cell__left),
+:deep(.image-form-item .wd-cell__value) {
+  align-items: flex-start !important;
+}
+
+.certificate-wrap {
+  width: 100%;
+}
+
+.certificate-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  padding: 8rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.certificate-item {
+  position: relative;
+}
+
+.certificate-media-item,
+.certificate-add-tile {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 8rpx;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.certificate-media-item image,
+.certificate-video-thumb {
+  width: 100%;
+  height: 100%;
+}
+
+.certificate-video-thumb {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+  align-items: center;
+  justify-content: center;
+  background: #111827;
+}
+
+.certificate-video-text {
+  color: #fff;
+  font-size: 22rpx;
+  line-height: 1;
+}
+
+.certificate-add-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1rpx dashed #d8e0ea;
+  background: #fff;
+}
+
+.certificate-add-icon {
+  color: #9aa9bd;
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+.certificate-delete {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  z-index: 2;
+  display: flex;
+  width: 34rpx;
+  height: 34rpx;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.76);
+}
+
 :deep(.wd-input__clear),
 :deep(.wd-textarea__clear),
 :deep(.wd-input-number__clear) {

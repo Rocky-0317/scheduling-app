@@ -92,17 +92,29 @@
             </wd-tag>
           </view>
 
-          <view class="record-body" :class="{ 'person-body': isModernModule }">
+          <view class="record-body" :class="{ 'person-body': isModernModule, 'outbound-record-body': useRecordStyleModule }">
             <view
               v-for="key in getSecondaryKeys(item)"
               :key="key"
               class="record-line"
-              :class="{ 'person-line': isModernModule, 'person-line--wide': isWidePersonField(key) }"
+              :class="{
+                'person-line': isModernModule,
+                'person-line--wide': isWidePersonField(key),
+                'outbound-record-line': shouldUseRecordStyleField(key),
+              }"
             >
-              <view v-if="isModernModule" class="person-line-icon">
+              <view v-if="isModernModule && !shouldUseRecordStyleField(key)" class="person-line-icon">
                 <wd-icon :name="getFieldIcon(key)" size="28rpx" color="#7890ad" />
               </view>
-              <text class="record-label">{{ getFieldLabel(key) }}</text>
+              <view class="record-label" :class="{ 'outbound-record-label': shouldUseRecordStyleField(key) }">
+                <wd-icon
+                  v-if="shouldUseRecordStyleField(key)"
+                  :name="getRecordStyleLabelMeta(key).icon"
+                  size="26rpx"
+                  :color="getRecordStyleLabelMeta(key).color"
+                />
+                <text>{{ getFieldLabel(key) }}</text>
+              </view>
               <text class="record-text">{{ formatValue(item[key], key) }}</text>
             </view>
           </view>
@@ -132,10 +144,6 @@
             <!-- 领取按钮权限 和web一致 business:outboundRecord:claim -->
             <view v-if="config.claim && item.assignmentStatus === '1' && hasPerm(['business:outboundRecord:claim'])" class="person-delete-button record-action-button" @click.stop="claimRecord(item)">
               领取
-            </view>
-            <!-- 上传图片权限 business:outboundRecord:uploadImage -->
-            <view v-if="config.uploadImages && getItemId(item) && hasPerm(['business:outboundRecord:uploadImage'])" class="person-delete-button record-action-button" @click.stop="uploadImages(item)">
-              上传图片
             </view>
             <!-- 删除按钮权限 business:outboundRecord:remove -->
             <view v-if="config.remove && hasPerm(['business:outboundRecord:remove'])" class="person-delete-button record-action-button" @click.stop="removeItem(item)">
@@ -337,8 +345,32 @@ const canEdit = computed(() => !config.value.readonly && !!config.value.update)
 const isTimeoutModule = computed(() => config.value.key === 'timeoutReminder')
 const isModernModule = computed(() => ['outboundPersonnel', 'outboundGrid', 'bizPackage', 'customerInfo', 'storeList', 'storeInfo', 'outboundRecord', 'assignmentTree'].includes(config.value.key))
 const isPackageModule = computed(() => config.value.key === 'bizPackage')
+const recordStyleModuleKeys = ['outboundRecord', 'assignmentTree', 'outboundGrid', 'outboundPersonnel', 'bizPackage', 'customerInfo', 'storeList', 'storeInfo']
+const useRecordStyleModule = computed(() => recordStyleModuleKeys.includes(config.value.key))
 const showRecordActions = computed(() => config.value.key === 'outboundRecord')
 const activeSearchCount = computed(() => Object.values(queryParams.value).filter(value => value !== undefined && value !== '').length)
+const recordStyleLabelMetaMap: Record<string, { icon: string, color: string }> = {
+  packageName: { icon: 'home', color: '#2563eb' },
+  grid: { icon: 'location', color: '#0891b2' },
+  roleName: { icon: 'check-circle', color: '#7c3aed' },
+  businessType: { icon: 'list', color: '#2563eb' },
+  userName: { icon: 'user', color: '#2563eb' },
+  personName: { icon: 'user-group', color: '#16a34a' },
+  gridCode: { icon: 'location', color: '#0891b2' },
+  gridName: { icon: 'location', color: '#0891b2' },
+  sortOrder: { icon: 'list', color: '#ea580c' },
+  price: { icon: 'list', color: '#dc2626' },
+  description: { icon: 'edit', color: '#7c3aed' },
+  address: { icon: 'location', color: '#0891b2' },
+  storeUserName: { icon: 'store', color: '#16a34a' },
+  receiverName: { icon: 'user', color: '#7c3aed' },
+  orderTime: { icon: 'time-line', color: '#ea580c' },
+  followStatus: { icon: 'edit', color: '#dc2626' },
+  assignedPersonName: { icon: 'user', color: '#7c3aed' },
+  claimedTime: { icon: 'time-line', color: '#ea580c' },
+  overdueDays: { icon: 'time-line', color: '#ea580c' },
+  remark: { icon: 'edit', color: '#64748b' },
+}
 const quickSearchPlaceholder = computed(() => {
   const labels = config.value.searchFields
     .filter(field => field.type !== 'radio')
@@ -498,19 +530,6 @@ async function claimRecord(item: any) {
   reload()
 }
 
-function uploadImages(item: any) {
-  uni.chooseImage({
-    count: 9,
-    sizeType: ['compressed'],
-    success: async (res) => {
-      const filePaths = Array.isArray(res.tempFilePaths) ? res.tempFilePaths : [res.tempFilePaths]
-      await config.value.uploadImages?.(getItemId(item), filePaths)
-      toast.success('上传成功')
-      reload()
-    },
-  })
-}
-
 function copyRecordInfo(item: Record<string, any>) {
   const lines = buildRecordCopyLines(item)
   uni.setClipboardData({
@@ -525,6 +544,10 @@ function buildRecordCopyLines(item: Record<string, any>) {
   for (const key of getCopyFieldKeys()) {
     lines.push(`${getFieldLabel(key)}：${formatCopyValue(item[key], key)}`)
   }
+  if (config.value.key === 'outboundRecord') {
+    lines.push(`凭证图片：${formatCopyLinkList(getOutboundRecordCertificateUrls(item, 'image'))}`)
+    lines.push(`凭证视频：${formatCopyLinkList(getOutboundRecordCertificateUrls(item, 'video'))}`)
+  }
   return lines
 }
 
@@ -535,7 +558,11 @@ function getCopyFieldKeys() {
     ...config.value.formFields.map(field => field.key),
     ...config.value.secondaryKeys,
   ].filter(Boolean) as string[]
-  return Array.from(new Set(keys))
+  const uniqueKeys = Array.from(new Set(keys))
+  if (config.value.key === 'outboundRecord') {
+    return uniqueKeys.filter(key => key !== 'imageUrls' && key !== 'certificateFiles')
+  }
+  return uniqueKeys
 }
 
 function formatCopyValue(value: any, fieldKey: string) {
@@ -548,6 +575,57 @@ function formatCopyValue(value: any, fieldKey: string) {
     return getStatusLabel(fieldKey, value, fieldOptions)
   }
   return formatValue(value, fieldKey)
+}
+
+function getOutboundRecordCertificateUrls(item: Record<string, any>, mediaKind: 'image' | 'video') {
+  const normalizedFiles = normalizeOutboundRecordCertificateFiles(item.certificateFiles, item.imageUrls)
+  return normalizedFiles
+    .filter(file => mediaKind === 'video' ? isOutboundRecordVideoFile(file) : isOutboundRecordImageFile(file))
+    .map(file => getImageUrl(file.url))
+    .filter(Boolean)
+}
+
+function formatCopyLinkList(urls: string[]) {
+  if (!urls.length)
+    return '-'
+  if (urls.length === 1)
+    return urls[0]
+  return `\n${urls.map((url, index) => `${index + 1}. ${url}`).join('\n')}`
+}
+
+function normalizeOutboundRecordCertificateFiles(rawFiles: unknown, fallbackImageUrls?: string[]) {
+  const fileList = Array.isArray(rawFiles) ? rawFiles : []
+  const normalized = fileList.map((file) => {
+    if (!file || typeof file !== 'object')
+      return undefined
+    const current = file as Record<string, any>
+    const url = String(current.url ?? current.fileUrl ?? current.filePath ?? current.path ?? current.ossUrl ?? '')
+    if (!url)
+      return undefined
+    return {
+      mediaType: String(current.mediaType ?? current.fileType ?? ''),
+      url,
+    }
+  }).filter((file): file is { mediaType: string, url: string } => !!file)
+
+  const existingUrls = new Set(normalized.map(file => file.url))
+  ;(Array.isArray(fallbackImageUrls) ? fallbackImageUrls : []).forEach((url) => {
+    if (!url || existingUrls.has(url))
+      return
+    normalized.push({ mediaType: 'image', url })
+  })
+
+  return normalized
+}
+
+function isOutboundRecordVideoFile(file: { mediaType: string, url: string }) {
+  const type = file.mediaType.toLowerCase()
+  return type.includes('video') || /\.(?:mp4|mov|m4v|webm|avi)$/i.test(file.url)
+}
+
+function isOutboundRecordImageFile(file: { mediaType: string, url: string }) {
+  const type = file.mediaType.toLowerCase()
+  return type.includes('image') || (!isOutboundRecordVideoFile(file) && /\.(?:png|jpe?g|gif|webp|bmp)$/i.test(file.url))
 }
 
 function showListImages(item: Record<string, any>) {
@@ -563,6 +641,9 @@ function getFieldOptions(fieldKey: string) {
 }
 
 function getFieldLabel(key: string) {
+  if ((config.value.key === 'storeList' || config.value.key === 'storeInfo') && key === 'personName') {
+    return '门店名称'
+  }
   const labelMap: Record<string, string> = {
     roleName: '角色',
     businessType: '业务类型',
@@ -608,7 +689,24 @@ function getQuickSearchDisplayValue(formData: Record<string, any>) {
 }
 
 function isWidePersonField(key: string) {
-  return false
+  return key === 'followStatus'
+}
+
+function shouldUseRecordStyleField(key: string) {
+  return useRecordStyleModule.value
+}
+
+function getRecordStyleLabelMeta(key: string) {
+  if ((config.value.key === 'storeList' || config.value.key === 'storeInfo') && key === 'personName') {
+    return {
+      icon: 'store',
+      color: '#16a34a',
+    }
+  }
+  return recordStyleLabelMetaMap[key] || {
+    icon: getFieldIcon(key),
+    color: '#7890ad',
+  }
 }
 
 function getFieldIcon(key: string) {
@@ -625,10 +723,10 @@ function getFieldIcon(key: string) {
     grid: 'location',
     packageName: 'goods',
     packageCode: 'list',
-    price: 'money-circle',
+    price: 'list',
     description: 'edit',
     address: 'location',
-    storeUserName: 'shop',
+    storeUserName: 'store',
     orderTime: 'time',
     followStatus: 'edit',
     sortOrder: 'list',
@@ -648,8 +746,8 @@ function getModuleAvatarIcon() {
     customerInfo: 'user',
     bizPackage: 'goods',
     outboundGrid: 'location',
-    storeList: 'shop',
-    storeInfo: 'shop',
+    storeList: 'store',
+    storeInfo: 'store',
     outboundRecord: 'phone',
     timeoutReminder: 'time',
     assignmentTree: 'list',
@@ -1034,6 +1132,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   min-width: 0;
+  flex-wrap: nowrap;
 }
 
 .person-title-line > :first-child {
@@ -1041,11 +1140,15 @@ onMounted(async () => {
 }
 
 .person-name {
+  min-width: 0;
   flex: 1;
   color: #071d3a;
   font-size: 34rpx;
   font-weight: 800;
   line-height: 48rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .person-account {
@@ -1066,6 +1169,10 @@ onMounted(async () => {
   display: grid;
   margin-top: 20rpx;
   padding-left: 94rpx;
+}
+
+.outbound-record-body {
+  padding-left: 12rpx;
 }
 
 .record-line + .record-line {
@@ -1091,13 +1198,34 @@ onMounted(async () => {
 
 .person-line--wide {
   grid-column: 1 / -1;
+  align-items: flex-start;
 }
 
 .record-label {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
   width: 150rpx;
   flex-shrink: 0;
   color: #94a3b8;
   margin-right: 16rpx;
+}
+
+.outbound-record-line {
+  grid-template-columns: 168rpx minmax(0, 1fr);
+  column-gap: 30rpx;
+  align-items: flex-start;
+}
+
+.outbound-record-label {
+  width: auto;
+  margin-right: 10rpx;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.outbound-record-label text {
+  white-space: nowrap;
 }
 
 .person-line .record-label {
@@ -1109,10 +1237,25 @@ onMounted(async () => {
   line-height: 1.35;
 }
 
+.outbound-record-line .record-label {
+  display: flex;
+  align-items: center;
+}
+
+.outbound-record-line .record-text {
+  padding-left: 0;
+}
+
 .record-text {
+  display: block;
+
   min-width: 0;
+
   flex: 1;
+
   word-break: break-word;
+
+  overflow-wrap: anywhere;
 }
 
 .person-line .record-text {
@@ -1121,7 +1264,10 @@ onMounted(async () => {
   font-size: 28rpx;
   font-weight: 500;
   line-height: 1.35;
+
   word-break: break-word;
+
+  overflow-wrap: anywhere;
 }
 
 .record-actions {

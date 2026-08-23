@@ -4,6 +4,7 @@
 .cursor/
 node_modules/
 dist/
+vite.config.ts.timestamp-*.mjs
 tmp/
 .playwright-cli/
 docs/.vitepress/dist/

@@ -91,7 +91,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'grid', label: '网格', type: 'picker', source: 'grid' },
       { key: 'receiver', label: '接单人' },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', options: assignmentOptions },
-      { key: 'isSuccess', label: '是否成功', type: 'radio', source: 'businessIsSuccess' },
+      { key: 'isSuccess', label: '是否成功', type: 'picker', source: 'businessIsSuccess' },
     ],
     formFields: [
       { key: 'businessType', label: '业务类型', type: 'picker', source: 'businessType', required: true },
@@ -104,7 +104,7 @@ export const businessModules: Record<BusinessModuleKey, BusinessModuleConfig> = 
       { key: 'receiverName', label: '接单人', hiddenOnCreate: true, readonly: true },
       { key: 'orderTime', label: '接单时间', hiddenOnCreate: true, readonly: true },
       { key: 'assignmentStatus', label: '分发状态', type: 'radio', hiddenOnCreate: true, options: assignmentOptions, readonly: true },
-      { key: 'isSuccess', label: '是否成功', type: 'radio', hiddenOnCreate: true, source: 'businessIsSuccess' },
+      { key: 'isSuccess', label: '是否成功', type: 'picker', hiddenOnCreate: true, source: 'businessIsSuccess' },
       // 新增办理号卡：仅配送成功(isSuccess=1)、编辑模式显示，必填，对齐Web逻辑
       {
         key: 'cardNumber',

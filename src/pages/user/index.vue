@@ -308,6 +308,7 @@ async function handleLogout() {
 
 <style lang="scss" scoped>
 .mine-page {
+  --menu-entry-icon-gap: 22rpx;
   min-height: 100vh;
   background: #f3f6fb;
 }
@@ -561,7 +562,7 @@ async function handleLogout() {
   align-items: center;
   min-width: 0;
   flex: 1;
-  gap: 18rpx;
+  gap: var(--menu-entry-icon-gap);
 }
 
 .menu-icon {

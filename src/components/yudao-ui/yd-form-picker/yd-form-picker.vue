@@ -5,6 +5,7 @@
     :title="label"
     :title-width="labelWidth"
     :prop="prop || undefined"
+    :custom-class="disabled ? 'yd-form-picker--disabled' : ''"
     :is-link="!disabled"
     :value="displayValue"
     :placeholder="placeholder"
@@ -15,6 +16,7 @@
     :title="label"
     :title-width="labelWidth"
     :prop="prop || undefined"
+    :custom-class="disabled ? 'yd-form-picker--disabled' : ''"
     center
   >
     <view class="min-w-0 flex flex-1 items-center justify-end gap-12rpx">
@@ -36,6 +38,8 @@
     :label-key="labelKey"
     :value-key="valueKey"
     :root-portal="rootPortal"
+    @open="handlePickerOpenEvent"
+    @cancel="handlePickerCloseEvent"
     @confirm="handleConfirm"
   />
   <wd-select-picker
@@ -50,6 +54,8 @@
     :filterable="filterable"
     :root-portal="rootPortal"
     :scroll-into-view="!rootPortal"
+    @open="handlePickerOpenEvent"
+    @close="handlePickerCloseEvent"
     @confirm="handleSelectConfirm"
   />
 </template>
@@ -101,6 +107,8 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: any): void
   (e: 'confirm', value: any): void
   (e: 'clear'): void
+  (e: 'open'): void
+  (e: 'close'): void
 }>()
 
 const pickerRef = ref<PickerInstance>() // 普通单选选择器
@@ -159,6 +167,7 @@ function handleConfirm({ value }: { value: any }) {
   const modelValue = next === '' ? undefined : next
   emit('update:modelValue', modelValue)
   emit('confirm', modelValue)
+  emit('close')
 }
 
 /** 多选确认 */
@@ -169,6 +178,14 @@ function handleSelectConfirm({ value }: { value: any }) {
   const modelValue = props.type === 'radio' && next === '' ? undefined : next
   emit('update:modelValue', modelValue)
   emit('confirm', modelValue)
+}
+
+function handlePickerOpenEvent() {
+  emit('open')
+}
+
+function handlePickerCloseEvent() {
+  emit('close')
 }
 
 /** 格式化选中值 */
@@ -183,3 +200,11 @@ function format(value?: null | WotPickerValue | WotPickerValue[]) {
 
 defineExpose<YdFormPickerExpose>({ format })
 </script>
+
+<style lang="scss">
+.yd-form-picker--disabled {
+  .wd-cell__value {
+    color: var(--wot-input-disabled-color, #bfbfbf) !important;
+  }
+}
+</style>

@@ -52,6 +52,7 @@ const tokenInfoState = isDoubleTokenMode
     }
 
 let appUpdateChecking = false
+let appUpdateChecked = false
 let refreshTokenPromise: Promise<IAuthLoginRes> | null = null
 
 export const useTokenStore = defineStore(
@@ -148,10 +149,12 @@ export const useTokenStore = defineStore(
      * iOS：自动打开 App Store 或配置的下载地址。
      */
     async function checkAppUpdate() {
-      if (appUpdateChecking)
+      if (appUpdateChecking || appUpdateChecked)
         return
 
       appUpdateChecking = true
+      // 每次登录会话只请求一次最新版本，失败后也不在其他生命周期中重复请求。
+      appUpdateChecked = true
 
       try {
         const systemInfo = uni.getSystemInfoSync() as {
@@ -294,6 +297,7 @@ export const useTokenStore = defineStore(
       updateNowTime()
       clearAccessTokenExpireTime()
 
+      appUpdateChecked = false
       refreshTokenPromise = null
       tokenInfo.value = { ...tokenInfoState }
 

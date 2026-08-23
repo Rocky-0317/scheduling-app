@@ -5,6 +5,7 @@ import {
   clearPendingAppUpdate,
   dismissAppUpdate,
   getPendingAppUpdate,
+  markAppUpdateAttempted,
 } from '@/utils/appUpdate'
 
 definePage({
@@ -103,6 +104,8 @@ function installApk(filename: string) {
     { force: false },
     () => {
       resetTask()
+      if (update.value)
+        markAppUpdateAttempted(update.value.versionCode)
       clearPendingAppUpdate()
       uni.showToast({ title: '请在系统页面完成安装', icon: 'none', duration: 3000 })
     },

@@ -39,6 +39,7 @@ import { getLocalAppVersion } from '@/utils/app'
 import {
   APP_UPDATE_PAGE,
   isAppUpdateDismissed,
+  isAppUpdateRecentlyAttempted,
   savePendingAppUpdate,
 } from '@/utils/appUpdate'
 
@@ -233,6 +234,14 @@ export const useTokenStore = defineStore(
 
         if (isAppUpdateDismissed(latestVersionCode))
           return
+
+        if (isAppUpdateRecentlyAttempted(latestVersionCode)) {
+          console.warn('近期已调起过该版本安装器，跳过重复更新；请确认 APK versionCode 与发布记录一致', {
+            localVersionCode,
+            latestVersionCode,
+          })
+          return
+        }
 
         console.log('检测到新版本，开始自动更新', {
           platform,

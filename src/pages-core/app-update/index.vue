@@ -24,6 +24,7 @@ const errorMessage = ref('')
 const countdown = ref(5)
 let downloadTask: PlusDownloaderDownload | null = null
 let autoUpdateTimer: ReturnType<typeof setInterval> | undefined
+const updateFailedMessage = '自动更新失败，请卸载原有应用，前往网页版重新扫码下载最新 APP'
 
 const actionText = computed(() => {
   if (installing.value)
@@ -73,7 +74,7 @@ function installApk(filename: string) {
     },
     (error) => {
       console.error('APK 安装失败', error)
-      resetTask('无法调起系统安装器，请检查“安装未知应用”权限后重试')
+      resetTask(updateFailedMessage)
     },
   )
 }
@@ -89,12 +90,12 @@ function verifyAndInstall(filename: string) {
       const expectedSize = Number(update.value?.apkFileSize || 0)
       if (expectedSize > 0 && Number(metadata.size) !== expectedSize) {
         entry.remove(() => {}, () => {})
-        resetTask('安装包大小校验失败，请重新下载')
+        resetTask(updateFailedMessage)
         return
       }
       installApk(filename)
-    }, () => resetTask('无法校验安装包，请重新下载'))
-  }, () => resetTask('下载的安装包不存在，请重新下载'))
+    }, () => resetTask(updateFailedMessage))
+  }, () => resetTask(updateFailedMessage))
 }
 
 function startUpdate() {
@@ -117,7 +118,7 @@ function startUpdate() {
   const savePath = `_downloads/app_update_${update.value!.versionCode}_${Date.now()}.apk`
   downloadTask = plus.downloader.createDownload(
     update.value!.downloadUrl,
-    { filename: savePath, timeout: 300, retry: 2 },
+    { filename: savePath, timeout: 300 },
     (download, status) => {
       if (status === 200 && download.filename) {
         downloading.value = false
@@ -126,7 +127,7 @@ function startUpdate() {
         return
       }
       console.error('安装包下载失败', { status, download })
-      resetTask(`安装包下载失败${status ? `（${status}）` : ''}，请检查网络后重试`)
+      resetTask(updateFailedMessage)
     },
   )
   downloadTask.addEventListener('statechanged', (task) => {
